@@ -21,6 +21,17 @@ import {
 
 const SUIT_SYMBOLS = { C: '♣', D: '♦', H: '♥', S: '♠' }
 
+// Join truthy class fragments.
+const cx = (...c) => c.filter(Boolean).join(' ')
+
+// Shared utility-class strings.
+const BTN =
+  'px-2.5 py-1 border border-gray-300 rounded bg-white text-sm cursor-pointer ' +
+  'hover:bg-gray-50 disabled:opacity-40 disabled:cursor-default'
+const SLOT =
+  'w-[52px] h-[72px] border border-gray-300 rounded-md bg-white flex ' +
+  'items-center justify-center cursor-pointer select-none'
+
 function randomDeal() {
   return Math.floor(Math.random() * 1000000) + 1
 }
@@ -209,80 +220,127 @@ export default function App() {
     cardIndex >= selected.cardIndex
 
   return (
-    <div className="app">
-      <header className="toolbar">
-        <button onClick={handleNewGame}>New Game</button>
-        <button onClick={handleSelectGame}>Select Game #</button>
-        <button onClick={handleRestart}>Restart</button>
-        <button onClick={handleUndo} disabled={won || history.length === 0}>
+    <div className="mx-auto max-w-[900px] p-3">
+      <header className="mb-2 flex flex-wrap items-center gap-1.5">
+        <button className={BTN} onClick={handleNewGame}>
+          New Game
+        </button>
+        <button className={BTN} onClick={handleSelectGame}>
+          Select Game #
+        </button>
+        <button className={BTN} onClick={handleRestart}>
+          Restart
+        </button>
+        <button
+          className={BTN}
+          onClick={handleUndo}
+          disabled={won || history.length === 0}
+        >
           Undo
         </button>
-        {canFinish && <button onClick={handleFinish}>Finish</button>}
-        <button onClick={() => setShowStats(true)}>Statistics</button>
-        <span className="deal-number">Deal #{state.dealNumber}</span>
+        {canFinish && (
+          <button className={BTN} onClick={handleFinish}>
+            Finish
+          </button>
+        )}
+        <button className={BTN} onClick={() => setShowStats(true)}>
+          Statistics
+        </button>
+        <span className="ml-auto text-[13px] text-gray-500">
+          Deal #{state.dealNumber}
+        </span>
       </header>
 
-      {message && <div className="message">{message}</div>}
-      {won && <div className="banner win">You win! 🎉</div>}
+      {message && (
+        <div className="mb-1.5 border border-amber-300 bg-amber-100 px-2 py-1 text-[13px]">
+          {message}
+        </div>
+      )}
+      {won && (
+        <div className="mb-1.5 border border-green-400 bg-green-200 px-2.5 py-1.5 text-center font-semibold">
+          You win! 🎉
+        </div>
+      )}
       {stuck && (
-        <div className="banner stuck">
+        <div className="mb-1.5 border border-red-300 bg-red-100 px-2.5 py-1.5 text-center font-semibold">
           No moves left — start a New Game or Undo.
         </div>
       )}
 
-      <section className="top-row">
-        <div className="free-cells">
+      <section className="mb-4 flex justify-between gap-4">
+        <div className="flex gap-1.5">
           {state.freeCells.map((card, idx) => (
             <div
               key={idx}
-              className={
-                'slot' +
-                (card ? ' filled' : '') +
-                (selected && selected.kind === 'free' && selected.idx === idx
-                  ? ' selected'
-                  : '')
-              }
+              className={cx(
+                SLOT,
+                selected &&
+                  selected.kind === 'free' &&
+                  selected.idx === idx &&
+                  'ring-2 ring-inset ring-blue-500',
+              )}
               onClick={() => onFreeCellClick(idx)}
               onDoubleClick={() =>
                 card && sendToFoundation({ kind: 'free', idx })
               }
             >
-              {card ? <Card card={card} /> : <span className="empty">free</span>}
+              {card ? (
+                <Card card={card} />
+              ) : (
+                <span className="text-xs text-gray-400">free</span>
+              )}
             </div>
           ))}
         </div>
 
-        <div className="foundations">
+        <div className="flex gap-1.5">
           {SUITS.map((suit) => (
             <div
               key={suit}
-              className={'slot foundation ' + (isRed({ suit }) ? 'red' : 'black')}
+              className={SLOT}
               onClick={() => onFoundationClick(suit)}
             >
               {state.foundations[suit] > 0 ? (
                 <Card card={{ rank: state.foundations[suit], suit }} />
               ) : (
-                <span className="empty">{SUIT_SYMBOLS[suit]}</span>
+                <span
+                  className={cx(
+                    'text-xl',
+                    isRed({ suit }) ? 'text-red-300' : 'text-gray-300',
+                  )}
+                >
+                  {SUIT_SYMBOLS[suit]}
+                </span>
               )}
             </div>
           ))}
         </div>
       </section>
 
-      <section className="tableau">
+      <section className="grid grid-cols-8 gap-2">
         {state.columns.map((col, c) => (
-          <div className="column" key={c}>
+          <div className="min-h-[80px]" key={c}>
             {col.length === 0 ? (
-              <div className="slot empty-col" onClick={() => onEmptyColumnClick(c)}>
-                <span className="empty">empty</span>
+              <div
+                className={cx(
+                  'flex h-[72px] w-full cursor-pointer select-none items-center',
+                  'justify-center rounded-md border border-gray-300 bg-white',
+                )}
+                onClick={() => onEmptyColumnClick(c)}
+              >
+                <span className="text-xs text-gray-400">empty</span>
               </div>
             ) : (
               col.map((card, r) => (
                 <div
                   key={r}
-                  className={
-                    'card-in-col' + (isSelectedCard(c, r) ? ' selected' : '')
-                  }
+                  className={cx(
+                    '-mb-0.5 cursor-pointer select-none rounded-md border',
+                    'border-gray-300 px-1.5 py-1',
+                    isSelectedCard(c, r)
+                      ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
+                      : 'bg-white',
+                  )}
                   onClick={() => onColumnCardClick(c, r)}
                   onDoubleClick={() =>
                     r === col.length - 1 &&
@@ -301,7 +359,7 @@ export default function App() {
         <StatsModal stats={stats} onClose={() => setShowStats(false)} />
       )}
 
-      <footer className="help">
+      <footer className="mt-4 text-xs text-gray-500">
         Click a card (or a run) to pick it up, then click a destination.
         Double-click sends a card to its foundation. Unlimited undo.
       </footer>
@@ -311,7 +369,12 @@ export default function App() {
 
 function Card({ card }) {
   return (
-    <span className={'card ' + (isRed(card) ? 'red' : 'black')}>
+    <span
+      className={cx(
+        'text-base font-semibold',
+        isRed(card) ? 'text-red-700' : 'text-gray-900',
+      )}
+    >
       {cardLabel(card)}
     </span>
   )
@@ -319,17 +382,27 @@ function Card({ card }) {
 
 function StatsModal({ stats, onClose }) {
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Statistics</h2>
-        <ul>
-          <li>Games won: {stats.won}</li>
-          <li>Games lost: {stats.lost}</li>
-          <li>Win percentage: {winPercent(stats)}%</li>
-          <li>Current streak: {stats.currentStreak}</li>
-          <li>Longest winning streak: {stats.longestStreak}</li>
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="min-w-[260px] rounded-lg bg-white px-7 py-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-2 text-lg font-semibold">Statistics</h2>
+        <ul className="mb-4">
+          <li className="py-0.5">Games won: {stats.won}</li>
+          <li className="py-0.5">Games lost: {stats.lost}</li>
+          <li className="py-0.5">Win percentage: {winPercent(stats)}%</li>
+          <li className="py-0.5">Current streak: {stats.currentStreak}</li>
+          <li className="py-0.5">
+            Longest winning streak: {stats.longestStreak}
+          </li>
         </ul>
-        <button onClick={onClose}>Close</button>
+        <button className={BTN} onClick={onClose}>
+          Close
+        </button>
       </div>
     </div>
   )
