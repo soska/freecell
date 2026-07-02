@@ -1,0 +1,179 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f4f4f4;
+  color: #222;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.toolbar button {
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.deal-number {
+  margin-left: auto;
+  font-size: 13px;
+  color: #666;
+}
+
+.message {
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  background: #fff3cd;
+  border: 1px solid #ffe08a;
+  font-size: 13px;
+}
+
+.banner {
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-align: center;
+}
+.banner.win {
+  background: #d1f5d3;
+  border: 1px solid #7bd888;
+}
+.banner.stuck {
+  background: #f8d7da;
+  border: 1px solid #e88;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.free-cells,
+.foundations {
+  display: flex;
+  gap: 6px;
+}
+
+.slot {
+  width: 52px;
+  height: 72px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.slot.selected {
+  outline: 3px solid #2b7de9;
+  outline-offset: -1px;
+}
+
+.slot .empty {
+  font-size: 12px;
+  color: #bbb;
+}
+
+.tableau {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.column {
+  min-height: 80px;
+}
+
+.empty-col {
+  width: 100%;
+}
+
+.card-in-col,
+.slot .card {
+  display: block;
+}
+
+.card-in-col {
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #fff;
+  padding: 4px 6px;
+  margin-bottom: -2px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-in-col.selected {
+  background: #dbeafe;
+  outline: 2px solid #2b7de9;
+}
+
+.card {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card.red,
+.foundation.red .empty {
+  color: #c0392b;
+}
+.card.black,
+.foundation.black .empty {
+  color: #222;
+}
+
+.help {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #777;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px 28px;
+  border-radius: 8px;
+  min-width: 260px;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.modal ul {
+  list-style: none;
+  padding: 0;
+}
+
+.modal li {
+  padding: 3px 0;
+}
