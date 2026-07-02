@@ -1,3 +1,11 @@
+/* Tailwind v4 — theme + utilities only, WITHOUT preflight, so the current
+   placeholder UI's native button/border styling stays intact. When the visual
+   redesign starts, replace these three lines with `@import "tailwindcss";`
+   (which adds preflight) and migrate the rules below to utility classes. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
 * {
   box-sizing: border-box;
 }
