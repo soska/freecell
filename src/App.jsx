@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cardLabel, isRed, SUITS } from './game/deck.js'
 import {
+  canMove,
   finishNow,
   isTriviallyWinnable,
   newGame,
@@ -44,6 +45,8 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [resolved, setResolved] = useState(false) // win/loss already counted
   const [showStats, setShowStats] = useState(false)
+  const [dragSource, setDragSource] = useState(null) // card(s) being dragged
+  const [dropKey, setDropKey] = useState(null) // key of hovered valid target
 
   const won = useMemo(() => isWon(state), [state])
   const stuck = useMemo(() => !won && isStuck(state), [state, won])
@@ -219,6 +222,43 @@ export default function App() {
     selected.col === col &&
     cardIndex >= selected.cardIndex
 
+  // ---- Drag & drop (native HTML5) ----
+  // A drag reuses the same source/dest move engine as click-to-move.
+
+  function startDrag(source) {
+    setSelected(null) // dragging supersedes a pending click-selection
+    setDragSource(source)
+    setMessage('')
+  }
+
+  function endDrag() {
+    setDragSource(null)
+    setDropKey(null)
+  }
+
+  // Allow a drop only onto a target the move engine accepts; highlight it.
+  function onDragOverTarget(e, dest, key) {
+    if (!dragSource) return
+    if (canMove(state, dragSource, dest)) {
+      e.preventDefault() // permit the drop
+      if (dropKey !== key) setDropKey(key)
+    } else if (dropKey !== null) {
+      setDropKey(null) // hovering an invalid target: clear any highlight
+    }
+  }
+
+  function onDropTarget(dest) {
+    if (dragSource) tryMove(dragSource, dest)
+    endDrag()
+  }
+
+  // Is this column card part of the run currently being dragged?
+  const isDraggingCard = (col, cardIndex) =>
+    dragSource &&
+    dragSource.kind === 'column' &&
+    dragSource.col === col &&
+    cardIndex >= dragSource.cardIndex
+
   return (
     <div className="mx-auto max-w-[900px] p-3">
       <header className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -272,12 +312,24 @@ export default function App() {
           {state.freeCells.map((card, idx) => (
             <div
               key={idx}
+              draggable={!!card}
+              onDragStart={() => card && startDrag({ kind: 'free', idx })}
+              onDragEnd={endDrag}
+              onDragOver={(e) =>
+                onDragOverTarget(e, { kind: 'free', idx }, 'free:' + idx)
+              }
+              onDrop={() => onDropTarget({ kind: 'free', idx })}
               className={cx(
                 SLOT,
+                dropKey === 'free:' + idx && 'ring-2 ring-inset ring-green-500',
                 selected &&
                   selected.kind === 'free' &&
                   selected.idx === idx &&
                   'ring-2 ring-inset ring-blue-500',
+                dragSource &&
+                  dragSource.kind === 'free' &&
+                  dragSource.idx === idx &&
+                  'opacity-40',
               )}
               onClick={() => onFreeCellClick(idx)}
               onDoubleClick={() =>
@@ -297,7 +349,14 @@ export default function App() {
           {SUITS.map((suit) => (
             <div
               key={suit}
-              className={SLOT}
+              onDragOver={(e) =>
+                onDragOverTarget(e, { kind: 'foundation', suit }, 'fdn:' + suit)
+              }
+              onDrop={() => onDropTarget({ kind: 'foundation', suit })}
+              className={cx(
+                SLOT,
+                dropKey === 'fdn:' + suit && 'ring-2 ring-inset ring-green-500',
+              )}
               onClick={() => onFoundationClick(suit)}
             >
               {state.foundations[suit] > 0 ? (
@@ -319,7 +378,17 @@ export default function App() {
 
       <section className="grid grid-cols-8 gap-2">
         {state.columns.map((col, c) => (
-          <div className="min-h-[80px]" key={c}>
+          <div
+            className={cx(
+              'min-h-[80px] rounded-md',
+              dropKey === 'col:' + c && 'ring-2 ring-green-500',
+            )}
+            key={c}
+            onDragOver={(e) =>
+              onDragOverTarget(e, { kind: 'column', col: c }, 'col:' + c)
+            }
+            onDrop={() => onDropTarget({ kind: 'column', col: c })}
+          >
             {col.length === 0 ? (
               <div
                 className={cx(
@@ -334,12 +403,18 @@ export default function App() {
               col.map((card, r) => (
                 <div
                   key={r}
+                  draggable={isRun(col.slice(r))}
+                  onDragStart={() =>
+                    startDrag({ kind: 'column', col: c, cardIndex: r })
+                  }
+                  onDragEnd={endDrag}
                   className={cx(
                     '-mb-0.5 cursor-pointer select-none rounded-md border',
                     'border-gray-300 px-1.5 py-1',
                     isSelectedCard(c, r)
                       ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
                       : 'bg-white',
+                    isDraggingCard(c, r) && 'opacity-40',
                   )}
                   onClick={() => onColumnCardClick(c, r)}
                   onDoubleClick={() =>
