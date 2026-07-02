@@ -28,11 +28,21 @@ const cx = (...c) => c.filter(Boolean).join(' ')
 
 // Shared utility-class strings.
 const BTN =
-  'px-2.5 py-1 border border-gray-300 rounded bg-white text-sm cursor-pointer ' +
+  'px-3 py-1.5 border border-gray-300 rounded bg-white text-sm cursor-pointer ' +
   'hover:bg-gray-50 disabled:opacity-40 disabled:cursor-default'
+// A single-card holder (free cell / foundation): fills its grid column, keeps a
+// playing-card aspect ratio, and scales with the viewport.
 const SLOT =
-  'w-[52px] h-[72px] border border-gray-300 rounded-md bg-white flex ' +
+  'aspect-[5/7] w-full border border-gray-300 rounded-lg bg-white flex ' +
   'items-center justify-center cursor-pointer select-none'
+// A tableau card: full column width, fixed readable height, overlapped so each
+// card's rank corner peeks out above the one below it.
+const CARD =
+  'h-[clamp(3.5rem,7vw,6rem)] -mb-[clamp(2rem,4.6vw,4rem)] w-full rounded-lg ' +
+  'border border-gray-300 px-2 pt-1 select-none'
+// Rank/suit label sizing that grows with the screen.
+const LABEL = 'font-bold leading-none text-[clamp(1rem,2.3vw,2.25rem)]'
+const LABEL_LG = 'font-bold leading-none text-[clamp(1.25rem,3vw,3rem)]'
 
 function randomDeal() {
   return Math.floor(Math.random() * 1000000) + 1
@@ -349,8 +359,8 @@ export default function App() {
     drag && drag.source.kind === 'free' && drag.source.idx === idx
 
   return (
-    <div className="mx-auto max-w-[900px] p-3">
-      <header className="mb-2 flex flex-wrap items-center gap-1.5">
+    <div className="flex min-h-screen w-full flex-col gap-3 p-4">
+      <header className="flex flex-wrap items-center gap-1.5">
         <button className={BTN} onClick={handleNewGame}>
           New Game
         </button>
@@ -396,72 +406,68 @@ export default function App() {
         </div>
       )}
 
-      <section className="mb-4 flex justify-between gap-4">
-        <div className="flex gap-1.5">
-          {state.freeCells.map((card, idx) => (
-            <div
-              key={idx}
-              data-drop={'free:' + idx}
-              onPointerDown={(e) =>
-                card && onCardPointerDown(e, { kind: 'free', idx }, [card])
-              }
-              className={cx(
-                SLOT,
-                card && 'touch-none',
-                dropKey === 'free:' + idx && 'ring-2 ring-inset ring-green-500',
-                selected &&
-                  selected.kind === 'free' &&
-                  selected.idx === idx &&
-                  'ring-2 ring-inset ring-blue-500',
-                isDraggingFree(idx) && 'opacity-40',
-              )}
-              onClick={() => onFreeCellClick(idx)}
-              onDoubleClick={() =>
-                card && sendToFoundation({ kind: 'free', idx })
-              }
-            >
-              {card ? (
-                <Card card={card} />
-              ) : (
-                <span className="text-xs text-gray-400">free</span>
-              )}
-            </div>
-          ))}
-        </div>
+      <section className="grid grid-cols-8 gap-2">
+        {state.freeCells.map((card, idx) => (
+          <div
+            key={'f' + idx}
+            data-drop={'free:' + idx}
+            onPointerDown={(e) =>
+              card && onCardPointerDown(e, { kind: 'free', idx }, [card])
+            }
+            className={cx(
+              SLOT,
+              card && 'touch-none',
+              dropKey === 'free:' + idx && 'ring-2 ring-inset ring-green-500',
+              selected &&
+                selected.kind === 'free' &&
+                selected.idx === idx &&
+                'ring-2 ring-inset ring-blue-500',
+              isDraggingFree(idx) && 'opacity-40',
+            )}
+            onClick={() => onFreeCellClick(idx)}
+            onDoubleClick={() => card && sendToFoundation({ kind: 'free', idx })}
+          >
+            {card ? (
+              <Card card={card} className={LABEL_LG} />
+            ) : (
+              <span className="text-sm uppercase tracking-wide text-gray-300">
+                free
+              </span>
+            )}
+          </div>
+        ))}
 
-        <div className="flex gap-1.5">
-          {SUITS.map((suit) => (
-            <div
-              key={suit}
-              data-drop={'fdn:' + suit}
-              className={cx(
-                SLOT,
-                dropKey === 'fdn:' + suit && 'ring-2 ring-inset ring-green-500',
-              )}
-              onClick={() => onFoundationClick(suit)}
-            >
-              {state.foundations[suit] > 0 ? (
-                <Card card={{ rank: state.foundations[suit], suit }} />
-              ) : (
-                <span
-                  className={cx(
-                    'text-xl',
-                    isRed({ suit }) ? 'text-red-300' : 'text-gray-300',
-                  )}
-                >
-                  {SUIT_SYMBOLS[suit]}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        {SUITS.map((suit) => (
+          <div
+            key={suit}
+            data-drop={'fdn:' + suit}
+            className={cx(
+              SLOT,
+              dropKey === 'fdn:' + suit && 'ring-2 ring-inset ring-green-500',
+            )}
+            onClick={() => onFoundationClick(suit)}
+          >
+            {state.foundations[suit] > 0 ? (
+              <Card card={{ rank: state.foundations[suit], suit }} className={LABEL_LG} />
+            ) : (
+              <span
+                className={cx(
+                  LABEL_LG,
+                  isRed({ suit }) ? 'text-red-200' : 'text-gray-200',
+                )}
+              >
+                {SUIT_SYMBOLS[suit]}
+              </span>
+            )}
+          </div>
+        ))}
       </section>
 
-      <section className="grid grid-cols-8 gap-2">
+      <section className="grid flex-1 grid-cols-8 gap-2">
         {state.columns.map((col, c) => (
           <div
             className={cx(
-              'min-h-[80px] rounded-md',
+              'rounded-lg',
               dropKey === 'col:' + c && 'ring-2 ring-green-500',
             )}
             key={c}
@@ -470,12 +476,12 @@ export default function App() {
             {col.length === 0 ? (
               <div
                 className={cx(
-                  'flex h-[72px] w-full cursor-pointer select-none items-center',
-                  'justify-center rounded-md border border-gray-300 bg-white',
+                  SLOT,
+                  'border-dashed text-gray-300',
                 )}
                 onClick={() => onEmptyColumnClick(c)}
               >
-                <span className="text-xs text-gray-400">empty</span>
+                <span className="text-sm uppercase tracking-wide">empty</span>
               </div>
             ) : (
               col.map((card, r) => (
@@ -490,8 +496,8 @@ export default function App() {
                     )
                   }
                   className={cx(
-                    '-mb-0.5 cursor-pointer select-none rounded-md border',
-                    'border-gray-300 px-1.5 py-1',
+                    CARD,
+                    'cursor-pointer',
                     isRun(col.slice(r)) && 'touch-none',
                     isSelectedCard(c, r)
                       ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
@@ -520,10 +526,7 @@ export default function App() {
           animate={{ scale: 1.04 }}
         >
           {drag.cards.map((card, i) => (
-            <div
-              key={i}
-              className="-mb-0.5 rounded-md border border-gray-300 bg-white px-1.5 py-1 shadow-lg"
-            >
+            <div key={i} className={cx(CARD, 'bg-white shadow-xl')}>
               <Card card={card} />
             </div>
           ))}
@@ -542,14 +545,9 @@ export default function App() {
   )
 }
 
-function Card({ card }) {
+function Card({ card, className = LABEL }) {
   return (
-    <span
-      className={cx(
-        'text-base font-semibold',
-        isRed(card) ? 'text-red-700' : 'text-gray-900',
-      )}
-    >
+    <span className={cx(className, isRed(card) ? 'text-red-600' : 'text-gray-900')}>
       {cardLabel(card)}
     </span>
   )
