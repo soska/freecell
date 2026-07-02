@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { animate, motion, useMotionValue } from 'motion/react'
 import { cardLabel, isRed, SUITS } from './game/deck.js'
 import {
   canMove,
@@ -45,8 +46,14 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [resolved, setResolved] = useState(false) // win/loss already counted
   const [showStats, setShowStats] = useState(false)
-  const [dragSource, setDragSource] = useState(null) // card(s) being dragged
+  const [drag, setDrag] = useState(null) // { source, cards, width } while dragging
   const [dropKey, setDropKey] = useState(null) // key of hovered valid target
+
+  // Pointer-drag transient data (avoids re-rendering the board on pointermove).
+  const dragRef = useRef(null)
+  const suppressClickRef = useRef(false) // ignore the click synthesized after a drag
+  const ghostX = useMotionValue(0)
+  const ghostY = useMotionValue(0)
 
   const won = useMemo(() => isWon(state), [state])
   const stuck = useMemo(() => !won && isStuck(state), [state, won])
@@ -157,6 +164,10 @@ export default function App() {
   // ---- Click handlers ----
 
   function onColumnCardClick(col, cardIndex) {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return // this click was synthesized after a drag
+    }
     if (selected) {
       // Clicking within the currently-selected source column deselects.
       if (selected.kind === 'column' && selected.col === col) {
@@ -183,6 +194,10 @@ export default function App() {
   }
 
   function onFreeCellClick(idx) {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
     const card = state.freeCells[idx]
     if (selected) {
       if (selected.kind === 'free' && selected.idx === idx) {
@@ -222,42 +237,116 @@ export default function App() {
     selected.col === col &&
     cardIndex >= selected.cardIndex
 
-  // ---- Drag & drop (native HTML5) ----
-  // A drag reuses the same source/dest move engine as click-to-move.
+  // ---- Pointer-based drag & drop (mouse + touch + pen) ----
+  // A floating ghost follows the pointer; drop targets are hit-tested via
+  // elementFromPoint against their data-drop keys. Reuses the move engine.
 
-  function startDrag(source) {
-    setSelected(null) // dragging supersedes a pending click-selection
-    setDragSource(source)
-    setMessage('')
+  const DRAG_THRESHOLD = 5 // px before a press becomes a drag (vs a click)
+
+  // Which drop-target key (if any) is under the given viewport point?
+  function targetKeyAt(x, y) {
+    const el = document.elementFromPoint(x, y)
+    return el?.closest('[data-drop]')?.dataset.drop || null
   }
 
-  function endDrag() {
-    setDragSource(null)
-    setDropKey(null)
+  function parseDest(key) {
+    const [kind, val] = key.split(':')
+    if (kind === 'col') return { kind: 'column', col: Number(val) }
+    if (kind === 'free') return { kind: 'free', idx: Number(val) }
+    if (kind === 'fdn') return { kind: 'foundation', suit: val }
+    return null
   }
 
-  // Allow a drop only onto a target the move engine accepts; highlight it.
-  function onDragOverTarget(e, dest, key) {
-    if (!dragSource) return
-    if (canMove(state, dragSource, dest)) {
-      e.preventDefault() // permit the drop
-      if (dropKey !== key) setDropKey(key)
-    } else if (dropKey !== null) {
-      setDropKey(null) // hovering an invalid target: clear any highlight
+  // Begin tracking a potential drag. `source` is the move source; `cards` are
+  // the card objects to render in the ghost.
+  function onCardPointerDown(e, source, cards) {
+    if (e.button != null && e.button !== 0) return // primary button / touch only
+    suppressClickRef.current = false
+    const rect = e.currentTarget.getBoundingClientRect()
+    const boardState = state // frozen for this drag; the board can't change mid-drag
+    dragRef.current = {
+      source,
+      cards,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      originX: rect.left,
+      originY: rect.top,
+      width: rect.width,
+      moved: false,
     }
-  }
 
-  function onDropTarget(dest) {
-    if (dragSource) tryMove(dragSource, dest)
-    endDrag()
+    const onMove = (ev) => {
+      const d = dragRef.current
+      if (!d) return
+      const px = ev.clientX
+      const py = ev.clientY
+      if (!d.moved) {
+        if (Math.hypot(px - d.startX, py - d.startY) < DRAG_THRESHOLD) return
+        d.moved = true
+        setSelected(null)
+        ghostX.set(px - d.offsetX)
+        ghostY.set(py - d.offsetY)
+        setDrag({ source: d.source, cards: d.cards, width: d.width })
+      }
+      ghostX.set(px - d.offsetX)
+      ghostY.set(py - d.offsetY)
+      const key = targetKeyAt(px, py)
+      const dest = key && parseDest(key)
+      setDropKey(dest && canMove(boardState, d.source, dest) ? key : null)
+      ev.preventDefault()
+    }
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+
+    const onUp = (ev) => {
+      const d = dragRef.current
+      cleanup()
+      if (!d || !d.moved) {
+        dragRef.current = null
+        return // treated as a click; onClick handles it
+      }
+      suppressClickRef.current = true
+      const key = targetKeyAt(ev.clientX, ev.clientY)
+      const dest = key && parseDest(key)
+      const done = () => {
+        dragRef.current = null
+        setDrag(null)
+        setDropKey(null)
+      }
+      if (dest && canMove(boardState, d.source, dest)) {
+        done()
+        tryMove(d.source, dest)
+      } else {
+        // Spring the ghost back to its origin, then dismiss it. Falls back to
+        // an immediate dismiss if the animation promise isn't available.
+        const spring = { type: 'spring', stiffness: 600, damping: 40 }
+        Promise.all([
+          animate(ghostX, d.originX, spring).finished,
+          animate(ghostY, d.originY, spring).finished,
+        ]).then(done, done)
+      }
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
   }
 
   // Is this column card part of the run currently being dragged?
   const isDraggingCard = (col, cardIndex) =>
-    dragSource &&
-    dragSource.kind === 'column' &&
-    dragSource.col === col &&
-    cardIndex >= dragSource.cardIndex
+    drag &&
+    drag.source.kind === 'column' &&
+    drag.source.col === col &&
+    cardIndex >= drag.source.cardIndex
+
+  const isDraggingFree = (idx) =>
+    drag && drag.source.kind === 'free' && drag.source.idx === idx
 
   return (
     <div className="mx-auto max-w-[900px] p-3">
@@ -312,24 +401,19 @@ export default function App() {
           {state.freeCells.map((card, idx) => (
             <div
               key={idx}
-              draggable={!!card}
-              onDragStart={() => card && startDrag({ kind: 'free', idx })}
-              onDragEnd={endDrag}
-              onDragOver={(e) =>
-                onDragOverTarget(e, { kind: 'free', idx }, 'free:' + idx)
+              data-drop={'free:' + idx}
+              onPointerDown={(e) =>
+                card && onCardPointerDown(e, { kind: 'free', idx }, [card])
               }
-              onDrop={() => onDropTarget({ kind: 'free', idx })}
               className={cx(
                 SLOT,
+                card && 'touch-none',
                 dropKey === 'free:' + idx && 'ring-2 ring-inset ring-green-500',
                 selected &&
                   selected.kind === 'free' &&
                   selected.idx === idx &&
                   'ring-2 ring-inset ring-blue-500',
-                dragSource &&
-                  dragSource.kind === 'free' &&
-                  dragSource.idx === idx &&
-                  'opacity-40',
+                isDraggingFree(idx) && 'opacity-40',
               )}
               onClick={() => onFreeCellClick(idx)}
               onDoubleClick={() =>
@@ -349,10 +433,7 @@ export default function App() {
           {SUITS.map((suit) => (
             <div
               key={suit}
-              onDragOver={(e) =>
-                onDragOverTarget(e, { kind: 'foundation', suit }, 'fdn:' + suit)
-              }
-              onDrop={() => onDropTarget({ kind: 'foundation', suit })}
+              data-drop={'fdn:' + suit}
               className={cx(
                 SLOT,
                 dropKey === 'fdn:' + suit && 'ring-2 ring-inset ring-green-500',
@@ -384,10 +465,7 @@ export default function App() {
               dropKey === 'col:' + c && 'ring-2 ring-green-500',
             )}
             key={c}
-            onDragOver={(e) =>
-              onDragOverTarget(e, { kind: 'column', col: c }, 'col:' + c)
-            }
-            onDrop={() => onDropTarget({ kind: 'column', col: c })}
+            data-drop={'col:' + c}
           >
             {col.length === 0 ? (
               <div
@@ -403,14 +481,18 @@ export default function App() {
               col.map((card, r) => (
                 <div
                   key={r}
-                  draggable={isRun(col.slice(r))}
-                  onDragStart={() =>
-                    startDrag({ kind: 'column', col: c, cardIndex: r })
+                  onPointerDown={(e) =>
+                    isRun(col.slice(r)) &&
+                    onCardPointerDown(
+                      e,
+                      { kind: 'column', col: c, cardIndex: r },
+                      col.slice(r),
+                    )
                   }
-                  onDragEnd={endDrag}
                   className={cx(
                     '-mb-0.5 cursor-pointer select-none rounded-md border',
                     'border-gray-300 px-1.5 py-1',
+                    isRun(col.slice(r)) && 'touch-none',
                     isSelectedCard(c, r)
                       ? 'bg-blue-100 ring-2 ring-inset ring-blue-500'
                       : 'bg-white',
@@ -429,6 +511,24 @@ export default function App() {
           </div>
         ))}
       </section>
+
+      {drag && (
+        <motion.div
+          className="pointer-events-none fixed left-0 top-0 z-50"
+          style={{ x: ghostX, y: ghostY, width: drag.width }}
+          initial={{ scale: 0.96 }}
+          animate={{ scale: 1.04 }}
+        >
+          {drag.cards.map((card, i) => (
+            <div
+              key={i}
+              className="-mb-0.5 rounded-md border border-gray-300 bg-white px-1.5 py-1 shadow-lg"
+            >
+              <Card card={card} />
+            </div>
+          ))}
+        </motion.div>
+      )}
 
       {showStats && (
         <StatsModal stats={stats} onClose={() => setShowStats(false)} />
