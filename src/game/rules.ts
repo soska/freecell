@@ -1,31 +1,26 @@
 // Pure rule functions over GameState (§5-§10). No mutation, no I/O.
-//
-// GameState {
-//   dealNumber: int
-//   freeCells:  [Card|null, Card|null, Card|null, Card|null]
-//   foundations: { C:int, D:int, H:int, S:int }   // top rank per suit, 0 = empty
-//   columns:    Card[][]                            // 8 arrays, top -> bottom
-//   started:    bool                                // has a move been made?
-// }
 
-import { isRed, sameColor, SUITS } from './deck.js'
+import { isRed, sameColor, SUITS, type Card, type Suit } from './deck'
+import type { GameState } from './types'
+
+type Foundations = Record<Suit, number>
 
 // The bottom (movable) card of a column, or null.
-export function bottomCard(column) {
+export function bottomCard(column: Card[]): Card | null {
   return column.length ? column[column.length - 1] : null
 }
 
-export function emptyColumnCount(state) {
+export function emptyColumnCount(state: GameState): number {
   return state.columns.filter((c) => c.length === 0).length
 }
 
-export function freeCellsAvailable(state) {
+export function freeCellsAvailable(state: GameState): number {
   return state.freeCells.filter((c) => c === null).length
 }
 
 // Is `cards` (top -> bottom) a valid tableau run: strictly descending rank,
 // alternating color, contiguous. A single card is trivially a run.
-export function isRun(cards) {
+export function isRun(cards: Card[]): boolean {
   for (let i = 0; i < cards.length - 1; i++) {
     const upper = cards[i]
     const lower = cards[i + 1]
@@ -36,28 +31,32 @@ export function isRun(cards) {
 }
 
 // §5 — can this card go onto its suit's foundation right now?
-export function canMoveToFoundation(card, foundations) {
+export function canMoveToFoundation(card: Card, foundations: Foundations): boolean {
   return foundations[card.suit] === card.rank - 1
 }
 
 // §6 — can `card` be placed as the sole/top card onto destination column?
 // Empty columns accept ANY card (not kings-only).
-export function canPlaceOnColumn(card, destColumn) {
+export function canPlaceOnColumn(card: Card, destColumn: Card[]): boolean {
   if (destColumn.length === 0) return true
-  const top = bottomCard(destColumn)
+  const top = bottomCard(destColumn)!
   return card.rank === top.rank - 1 && !sameColor(card, top)
 }
 
 // §8 — supermove capacity. destIsEmpty halves capacity (the destination empty
 // column cannot be used as an intermediate).
-export function maxSupermove(freeCells, emptyColumns, destIsEmpty) {
+export function maxSupermove(
+  freeCells: number,
+  emptyColumns: number,
+  destIsEmpty: boolean,
+): number {
   const empties = destIsEmpty ? Math.max(0, emptyColumns - 1) : emptyColumns
   return (1 + freeCells) * 2 ** empties
 }
 
 // §9 — Microsoft conservative autoplay predicate for a single card.
 // Assumes the card is legally placeable on its foundation (caller checks).
-export function isSafeAutoplay(card, foundations) {
+export function isSafeAutoplay(card: Card, foundations: Foundations): boolean {
   const r = card.rank
   if (r <= 2) return true // Aces and Twos always
   // Both opposite-color foundations must be at rank >= r - 1.
@@ -68,18 +67,18 @@ export function isSafeAutoplay(card, foundations) {
 }
 
 // §10 — win: all four foundations at King.
-export function isWon(state) {
+export function isWon(state: GameState): boolean {
   return SUITS.every((s) => state.foundations[s] === 13)
 }
 
 // §10 — stuck: zero legal moves remain.
-export function isStuck(state) {
+export function isStuck(state: GameState): boolean {
   if (isWon(state)) return false
   return !hasAnyLegalMove(state)
 }
 
 // Does any legal, state-changing move exist?
-export function hasAnyLegalMove(state) {
+export function hasAnyLegalMove(state: GameState): boolean {
   const { columns, freeCells, foundations } = state
   const emptyCols = emptyColumnCount(state)
   const anyFreeCellOpen = freeCells.some((c) => c === null)

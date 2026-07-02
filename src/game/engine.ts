@@ -1,8 +1,9 @@
 // Game engine: builds state, applies player moves, runs autoplay to a fixed
-// point, manages the undo stack. All functions are pure w.r.t. their inputs
-// (they return new state; they never mutate the passed-in state).
+// point. All functions are pure w.r.t. their inputs (they return new state;
+// they never mutate the passed-in state).
 
-import { dealColumns, SUITS } from './deck.js'
+import { dealColumns, SUITS, type Card } from './deck'
+import type { Dest, GameState, MoveResult, Source } from './types'
 import {
   bottomCard,
   canMoveToFoundation,
@@ -12,9 +13,9 @@ import {
   isRun,
   isSafeAutoplay,
   maxSupermove,
-} from './rules.js'
+} from './rules'
 
-export function newGame(dealNumber) {
+export function newGame(dealNumber: number): GameState {
   return {
     dealNumber,
     freeCells: [null, null, null, null],
@@ -25,7 +26,7 @@ export function newGame(dealNumber) {
 }
 
 // Structural clone of the board (history entries are these snapshots).
-export function cloneState(state) {
+export function cloneState(state: GameState): GameState {
   return {
     dealNumber: state.dealNumber,
     freeCells: state.freeCells.slice(),
@@ -35,19 +36,8 @@ export function cloneState(state) {
   }
 }
 
-// ---- Sources & destinations -------------------------------------------------
-//
-// A "source" identifies where cards come from:
-//   { kind: 'column', col: i, cardIndex: j }  -> cards j..bottom of column i
-//   { kind: 'free',   idx: i }                -> the card in free cell i
-//
-// A "dest" identifies where they go:
-//   { kind: 'column',     col: i }
-//   { kind: 'free',       idx: i }
-//   { kind: 'foundation', suit: 'C'|'D'|'H'|'S' }
-
 // The cards a source refers to (top -> bottom), or null if the source is empty.
-export function sourceCards(state, source) {
+export function sourceCards(state: GameState, source: Source): Card[] | null {
   if (source.kind === 'free') {
     const card = state.freeCells[source.idx]
     return card ? [card] : null
@@ -58,7 +48,7 @@ export function sourceCards(state, source) {
 }
 
 // Can this move be made? Returns true/false without mutating.
-export function canMove(state, source, dest) {
+export function canMove(state: GameState, source: Source, dest: Dest): boolean {
   const cards = sourceCards(state, source)
   if (!cards) return false
 
@@ -88,31 +78,24 @@ export function canMove(state, source, dest) {
 
   // Supermove capacity check.
   const destIsEmpty = destCol.length === 0
-  // The source column, if any, is currently occupied so it doesn't count as an
-  // available empty; free cells / other empty columns provide the capacity.
   const free = freeCellsAvailable(state)
-  let empties = emptyColumnCount(state)
-  // If the source is a column, it isn't empty. If the dest is empty it's part
-  // of `empties`; maxSupermove handles that via destIsEmpty.
+  const empties = emptyColumnCount(state)
   const capacity = maxSupermove(free, empties, destIsEmpty)
   return cards.length <= capacity
 }
 
 // Apply a single validated move and return the new state. Returns the same
 // state reference (unchanged) if the move is illegal.
-export function applyMove(state, source, dest) {
+export function applyMove(state: GameState, source: Source, dest: Dest): GameState {
   if (!canMove(state, source, dest)) return state
   const next = cloneState(state)
-  const cards = sourceCards(state, source)
+  const cards = sourceCards(state, source)!
 
   // Remove from source.
   if (source.kind === 'free') {
     next.freeCells[source.idx] = null
   } else {
-    next.columns[source.col] = next.columns[source.col].slice(
-      0,
-      source.cardIndex,
-    )
+    next.columns[source.col] = next.columns[source.col].slice(0, source.cardIndex)
   }
 
   // Add to destination.
@@ -128,8 +111,8 @@ export function applyMove(state, source, dest) {
   return next
 }
 
-// §9 — run Microsoft-conservative autoplay to a fixed point (mutates a clone).
-export function runAutoplay(state) {
+// §9 — run Microsoft-conservative autoplay to a fixed point (on a clone).
+export function runAutoplay(state: GameState): GameState {
   let next = state
   let changed = true
   while (changed) {
@@ -168,10 +151,9 @@ export function runAutoplay(state) {
   return next
 }
 
-// A player move: validate, apply, then autoplay. Returns
-// { state, moved, prev } where `prev` is the pre-move snapshot for undo, or
-// { moved: false } if the move was illegal.
-export function playerMove(state, source, dest) {
+// A player move: validate, apply, then autoplay. `prev` is the pre-move
+// snapshot for undo.
+export function playerMove(state: GameState, source: Source, dest: Dest): MoveResult {
   if (!canMove(state, source, dest)) return { moved: false }
   const prev = cloneState(state)
   let next = applyMove(state, source, dest)
@@ -181,9 +163,9 @@ export function playerMove(state, source, dest) {
 
 // §10 auto-finish helper: greedily send every foundation-eligible card up,
 // ignoring the conservative rule (user-initiated "finish"). Runs to a fixed
-// point. Safe to expose; only useful when the board is trivially winnable.
-export function finishNow(state) {
-  let next = cloneState(state)
+// point.
+export function finishNow(state: GameState): GameState {
+  const next = cloneState(state)
   let changed = true
   while (changed) {
     changed = false
@@ -208,14 +190,9 @@ export function finishNow(state) {
   return next
 }
 
-// Is every remaining card trivially sendable to foundations? (No tableau card
-// sits above a lower-ranked card of the board that still blocks it.) Used to
-// enable the "Finish" affordance. Practical test: no column has an out-of-order
-// pair reading top->bottom that would prevent a pure foundation drain.
-export function isTriviallyWinnable(state) {
-  // Every column must be a strictly *ascending* stack top->bottom would be
-  // ideal, but the real condition is: repeatedly draining foundation-eligible
-  // cards empties the board. Simulate finishNow and check for a win.
+// Is every remaining card trivially sendable to foundations? Used to enable the
+// "Finish" affordance: simulate finishNow and check for a win.
+export function isTriviallyWinnable(state: GameState): boolean {
   const finished = finishNow(state)
   return SUITS.every((s) => finished.foundations[s] === 13)
 }

@@ -5,17 +5,19 @@
 // - Abandoning a started, un-won game (new/select/restart) -> games lost +1,
 //   current streak reset to 0.
 
+import type { GameState, Stats } from './types'
+
 const STATS_KEY = 'freecell.stats'
 const GAME_KEY = 'freecell.game'
 
-const DEFAULT_STATS = {
+const DEFAULT_STATS: Stats = {
   won: 0,
   lost: 0,
   currentStreak: 0,
   longestStreak: 0,
 }
 
-export function loadStats() {
+export function loadStats(): Stats {
   try {
     const raw = localStorage.getItem(STATS_KEY)
     if (!raw) return { ...DEFAULT_STATS }
@@ -25,7 +27,7 @@ export function loadStats() {
   }
 }
 
-export function saveStats(stats) {
+export function saveStats(stats: Stats): void {
   try {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats))
   } catch {
@@ -33,12 +35,12 @@ export function saveStats(stats) {
   }
 }
 
-export function winPercent(stats) {
+export function winPercent(stats: Stats): number {
   const total = stats.won + stats.lost
   return total === 0 ? 0 : Math.round((stats.won / total) * 100)
 }
 
-export function recordWin(stats) {
+export function recordWin(stats: Stats): Stats {
   const currentStreak = stats.currentStreak + 1
   return {
     won: stats.won + 1,
@@ -48,7 +50,7 @@ export function recordWin(stats) {
   }
 }
 
-export function recordLoss(stats) {
+export function recordLoss(stats: Stats): Stats {
   return {
     won: stats.won,
     lost: stats.lost + 1,
@@ -59,7 +61,7 @@ export function recordLoss(stats) {
 
 // ---- In-progress game persistence ------------------------------------------
 
-export function saveGame(state) {
+export function saveGame(state: GameState): void {
   try {
     localStorage.setItem(GAME_KEY, JSON.stringify(state))
   } catch {
@@ -67,16 +69,16 @@ export function saveGame(state) {
   }
 }
 
-export function loadGame() {
+export function loadGame(): GameState | null {
   try {
     const raw = localStorage.getItem(GAME_KEY)
-    return raw ? JSON.parse(raw) : null
+    return raw ? (JSON.parse(raw) as GameState) : null
   } catch {
     return null
   }
 }
 
-export function clearGame() {
+export function clearGame(): void {
   try {
     localStorage.removeItem(GAME_KEY)
   } catch {

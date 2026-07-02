@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -17,9 +18,12 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
     "vite": "^6.0.7",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.6"
   }
 }
