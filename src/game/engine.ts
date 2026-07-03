@@ -160,43 +160,43 @@ export function applyMove(state: GameState, source: Source, dest: Dest): GameSta
   return next
 }
 
-// §9 — run Microsoft-conservative autoplay to a fixed point (on a clone).
-export function runAutoplay(state: GameState): GameState {
-  let next = state
-  let changed = true
-  while (changed) {
-    changed = false
-
-    // Free cells.
-    for (let i = 0; i < 4; i++) {
-      const card = next.freeCells[i]
-      if (!card) continue
-      if (
-        canMoveToFoundation(card, next.foundations) &&
-        isSafeAutoplay(card, next.foundations)
-      ) {
-        next = next === state ? cloneState(state) : next
-        next.freeCells[i] = null
-        next.foundations[card.suit] += 1
-        changed = true
-      }
-    }
-
-    // Column bottoms.
-    for (let c = 0; c < next.columns.length; c++) {
-      const card = bottomCard(next.columns[c])
-      if (!card) continue
-      if (
-        canMoveToFoundation(card, next.foundations) &&
-        isSafeAutoplay(card, next.foundations)
-      ) {
-        next = next === state ? cloneState(state) : next
-        next.columns[c] = next.columns[c].slice(0, -1)
-        next.foundations[card.suit] += 1
-        changed = true
-      }
+// §9 — perform ONE safe (Microsoft-conservative) autoplay move, or return null
+// when none applies. The UI steps these one at a time to stagger the cascade.
+export function autoplayStep(state: GameState): GameState | null {
+  for (let i = 0; i < 4; i++) {
+    const card = state.freeCells[i]
+    if (
+      card &&
+      canMoveToFoundation(card, state.foundations) &&
+      isSafeAutoplay(card, state.foundations)
+    ) {
+      const next = cloneState(state)
+      next.freeCells[i] = null
+      next.foundations[card.suit] += 1
+      return next
     }
   }
+  for (let c = 0; c < state.columns.length; c++) {
+    const card = bottomCard(state.columns[c])
+    if (
+      card &&
+      canMoveToFoundation(card, state.foundations) &&
+      isSafeAutoplay(card, state.foundations)
+    ) {
+      const next = cloneState(state)
+      next.columns[c] = next.columns[c].slice(0, -1)
+      next.foundations[card.suit] += 1
+      return next
+    }
+  }
+  return null
+}
+
+// §9 — run autoplay to a fixed point. (The fixed point is order-independent,
+// so stepping and running-at-once always agree.)
+export function runAutoplay(state: GameState): GameState {
+  let next = state
+  for (let s = autoplayStep(next); s; s = autoplayStep(next)) next = s
   return next
 }
 
@@ -210,31 +210,36 @@ export function playerMove(state: GameState, source: Source, dest: Dest): MoveRe
   return { state: next, moved: true, prev }
 }
 
-// §10 auto-finish helper: greedily send every foundation-eligible card up,
-// ignoring the conservative rule (user-initiated "finish"). Runs to a fixed
-// point.
-export function finishNow(state: GameState): GameState {
-  const next = cloneState(state)
-  let changed = true
-  while (changed) {
-    changed = false
-    for (let i = 0; i < 4; i++) {
-      const card = next.freeCells[i]
-      if (card && canMoveToFoundation(card, next.foundations)) {
-        next.freeCells[i] = null
-        next.foundations[card.suit] += 1
-        changed = true
-      }
-    }
-    for (let c = 0; c < next.columns.length; c++) {
-      const card = bottomCard(next.columns[c])
-      if (card && canMoveToFoundation(card, next.foundations)) {
-        next.columns[c] = next.columns[c].slice(0, -1)
-        next.foundations[card.suit] += 1
-        changed = true
-      }
+// §10 — perform ONE greedy foundation move (ignores the conservative rule; the
+// user asked to finish), or null when none applies.
+export function finishStep(state: GameState): GameState | null {
+  for (let i = 0; i < 4; i++) {
+    const card = state.freeCells[i]
+    if (card && canMoveToFoundation(card, state.foundations)) {
+      const next = cloneState(state)
+      next.freeCells[i] = null
+      next.foundations[card.suit] += 1
+      return next
     }
   }
+  for (let c = 0; c < state.columns.length; c++) {
+    const card = bottomCard(state.columns[c])
+    if (card && canMoveToFoundation(card, state.foundations)) {
+      const next = cloneState(state)
+      next.columns[c] = next.columns[c].slice(0, -1)
+      next.foundations[card.suit] += 1
+      return next
+    }
+  }
+  return null
+}
+
+// §10 auto-finish helper: greedily send every foundation-eligible card up,
+// running finishStep to a fixed point.
+export function finishNow(state: GameState): GameState {
+  let next = state
+  for (let s = finishStep(next); s; s = finishStep(next)) next = s
+  if (next === state) next = cloneState(state)
   next.started = true
   return next
 }

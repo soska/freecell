@@ -3,13 +3,15 @@ import { makeAutoObservable, observable, reaction, runInAction } from 'mobx'
 import { animate, motionValue, type MotionValue } from 'motion/react'
 import type { Card, Suit } from './game/deck'
 import {
+  applyMove,
+  autoplayStep,
   bestDest,
   canMove,
   canSendToFoundation,
-  finishNow,
+  finishStep,
   isTriviallyWinnable,
   newGame as dealBoard,
-  playerMove,
+  runAutoplay,
   sourceCards,
 } from './game/engine'
 import { isRun, isStuck, isWon } from './game/rules'
@@ -26,6 +28,7 @@ import type { DragState, DropKey } from './components/dnd'
 
 const DRAG_THRESHOLD = 5 // px before a press becomes a drag (vs a click)
 const TAP_DOUBLE_MS = 250 // window to wait for a double-tap on a bankable card
+const CASCADE_MS = 120 // delay between staggered autoplay/finish cards
 
 function randomDeal(): number {
   return Math.floor(Math.random() * 1000000) + 1
@@ -79,6 +82,7 @@ export class GameStore {
   showStats = false
   drag: DragState | null = null
   dropKey: DropKey | null = null
+  cascading = false // an autoplay/finish cascade is stepping
 
   // Imperative, non-reactive fields (excluded from observability below).
   ghostX: MotionValue<number> = motionValue(0)
@@ -86,9 +90,13 @@ export class GameStore {
   dragRef: DragRef | null = null
   suppressClick = false // ignore the click synthesized after a drag
   pendingTap: { source: Source; timer: number } | null = null
+  cascadeTimer: number | null = null
 
   constructor() {
-    this.state = loadGame() ?? dealBoard(randomDeal())
+    // Restore the autoplay fixed-point invariant in case a reload interrupted
+    // a staggered cascade (a no-op for any settled saved state).
+    const loaded = loadGame()
+    this.state = loaded ? runAutoplay(loaded) : dealBoard(randomDeal())
     this.stats = loadStats()
     makeAutoObservable(
       this,
@@ -102,6 +110,7 @@ export class GameStore {
         dragRef: false,
         suppressClick: false,
         pendingTap: false,
+        cascadeTimer: false,
       },
       { autoBind: true },
     )
@@ -119,7 +128,7 @@ export class GameStore {
     return !this.won && isStuck(this.state)
   }
   get canFinish(): boolean {
-    return !this.won && isTriviallyWinnable(this.state)
+    return !this.won && !this.cascading && isTriviallyWinnable(this.state)
   }
   get canUndo(): boolean {
     return !this.won && this.history.length > 0
@@ -149,6 +158,9 @@ export class GameStore {
   undo(): void {
     if (this.won) return // never uncommit a win
     this.clearPendingTap()
+    // Cancelling a mid-flight cascade and popping the pre-move snapshot
+    // reverts the player move plus its whole autoplay bundle in one go.
+    this.cancelCascade()
     if (this.history.length === 0) {
       this.message = 'Nothing to undo.'
       return
@@ -159,9 +171,11 @@ export class GameStore {
   }
 
   finish(): void {
+    if (this.cascading || this.won) return
     this.clearPendingTap()
     this.history = [...this.history, this.state]
-    this.state = finishNow(this.state)
+    this.state = { ...this.state, started: true }
+    this.startCascade(finishStep)
   }
 
   setShowStats(open: boolean): void {
@@ -171,6 +185,7 @@ export class GameStore {
   private begin(dealNumber: number): void {
     this.settleAbandoned()
     this.clearPendingTap()
+    this.cancelCascade()
     this.state = dealBoard(dealNumber)
     this.history = []
     this.resolved = false
@@ -195,15 +210,48 @@ export class GameStore {
 
   // ---- Moves ----
 
+  // Apply a player move, then stagger its autoplay cascade one card at a time.
+  // A single history snapshot covers the move plus the whole cascade, so one
+  // undo reverts the bundle (§12). A move made mid-cascade simply computes
+  // from the intermediate state (every step is a legal position) and its own
+  // cascade picks up whatever was still pending.
   private commit(source: Source, dest: Dest): void {
-    const result = playerMove(this.state, source, dest)
-    if (!result.moved) {
+    if (!canMove(this.state, source, dest)) {
       this.message = 'Illegal move.'
       return
     }
-    this.history = [...this.history, result.prev]
-    this.state = result.state
+    this.cancelCascade()
+    this.history = [...this.history, this.state]
+    this.state = applyMove(this.state, source, dest)
     this.message = ''
+    this.startCascade(autoplayStep)
+  }
+
+  // Step `step` against the live state every CASCADE_MS until it returns null.
+  private startCascade(step: (s: GameState) => GameState | null): void {
+    const tick = () => {
+      const next = step(this.state)
+      runInAction(() => {
+        if (next) {
+          this.state = next
+          this.cascadeTimer = window.setTimeout(tick, CASCADE_MS)
+        } else {
+          this.cascading = false
+          this.cascadeTimer = null
+        }
+      })
+    }
+    if (step(this.state) === null) return // nothing pending
+    this.cascading = true
+    this.cascadeTimer = window.setTimeout(tick, CASCADE_MS)
+  }
+
+  private cancelCascade(): void {
+    if (this.cascadeTimer !== null) {
+      clearTimeout(this.cascadeTimer)
+      this.cascadeTimer = null
+    }
+    this.cascading = false
   }
 
   private smartMove(source: Source): void {

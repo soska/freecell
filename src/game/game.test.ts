@@ -8,11 +8,14 @@ import {
   maxSupermove,
 } from './rules'
 import {
+  autoplayStep,
   bestDest,
   canMove,
   canSendToFoundation,
+  finishStep,
   newGame,
   playerMove,
+  runAutoplay,
 } from './engine'
 import type { GameState } from './types'
 
@@ -217,6 +220,36 @@ describe('tap-to-move: bestDest priority', () => {
     const s = mkState([[card(1, 'H')], [card(2, 'H')]])
     expect(canSendToFoundation(s, from(0))).toBe(true) // A♥ -> empty H foundation
     expect(canSendToFoundation(s, from(1))).toBe(false) // 2♥ blocked, H empty
+  })
+})
+
+describe('staggered cascade steps', () => {
+  it('autoplayStep plays exactly one safe card per call, to the same fixed point', () => {
+    const s = mkState([[card(1, 'H')], [card(1, 'S')]])
+    const s1 = autoplayStep(s)!
+    expect(s1.foundations.H + s1.foundations.S).toBe(1) // one ace up
+    const s2 = autoplayStep(s1)!
+    expect(s2.foundations.H).toBe(1)
+    expect(s2.foundations.S).toBe(1)
+    expect(autoplayStep(s2)).toBeNull() // fixed point reached
+    expect(runAutoplay(s).foundations).toEqual(s2.foundations)
+  })
+
+  it('autoplayStep still honors the conservative rule', () => {
+    // 7♦ is bankable but unsafe (black 6s not up) -> no step.
+    const s = mkState([[card(7, 'D')]], {
+      foundations: { C: 0, D: 6, H: 0, S: 0 },
+    })
+    expect(autoplayStep(s)).toBeNull()
+  })
+
+  it('finishStep is greedy: sends any foundation-eligible card', () => {
+    const s = mkState([[card(7, 'D')]], {
+      foundations: { C: 0, D: 6, H: 0, S: 0 },
+    })
+    const s1 = finishStep(s)!
+    expect(s1.foundations.D).toBe(7)
+    expect(finishStep(s1)).toBeNull()
   })
 })
 
