@@ -15,11 +15,14 @@ export const SLOT =
   'aspect-[5/7] w-full border border-gray-300 rounded-lg bg-white flex ' +
   'items-center justify-center cursor-pointer select-none'
 
-// A tableau card: full column width, fixed readable height, overlapped so each
-// card's rank corner peeks out above the one below it.
+// A tableau card: a full playing-card rectangle (5:7) filling its column width,
+// overlapped so each covered card shows only its top corner. The negative bottom
+// margin is a percentage of the card's WIDTH (per CSS): at 5:7 the height is
+// 140% of width, so -mb-[105%] leaves the top ~35% (the rank/suit) visible. The
+// last card in a stack resets its margin so it renders in full.
 export const CARD =
-  'h-[clamp(3.5rem,7vw,6rem)] -mb-[clamp(2rem,4.6vw,4rem)] w-full rounded-lg ' +
-  'border border-gray-300 px-2 pt-1 select-none'
+  'aspect-[5/7] w-full -mb-[105%] last:mb-0 rounded-lg border border-gray-300 ' +
+  'px-2 pt-1.5 select-none'
 
 // Rank/suit label sizing that grows with the screen.
 export const LABEL = 'font-bold leading-none text-[clamp(1rem,2.3vw,2.25rem)]'

@@ -35,7 +35,11 @@ export function sameColor(a: Card, b: Card): boolean {
 
 // Human-readable label, e.g. "J♦".
 export function cardLabel(card: Card): string {
-  return RANK_CHARS[card.rank - 1] + SUIT_SYMBOLS[card.suit]
+  return RANK_CHARS[card.rank - 1]
+}
+
+export function cardSuitSymbol(card: Card): string {
+  return SUIT_SYMBOLS[card.suit]
 }
 
 // Parse a 2-char code like "JD" into a card object.
