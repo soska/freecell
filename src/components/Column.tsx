@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite'
+import { cardCode } from '../game/deck'
 import { isRun } from '../game/rules'
 import { cn } from '../lib/cn'
 import { store } from '../store'
@@ -28,7 +29,7 @@ export const Column = observer(function Column({ col }: { col: number }) {
           const draggable = isRun(cards.slice(r))
           return (
             <Card
-              key={r}
+              key={cardCode(card)}
               card={card}
               className={cn(
                 'cursor-pointer overflow-hidden mt-[-110%] first:mt-0',

@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { SUITS } from '../game/deck'
+import { cardCode, SUITS } from '../game/deck'
 import { cn } from '../lib/cn'
 import { store } from '../store'
 import { Card } from './Card'
@@ -28,6 +28,7 @@ export const Board = observer(function Board() {
             >
               {card ? (
                 <Card
+                  key={cardCode(card)}
                   card={card}
                   className={cn('touch-none', dragging && 'opacity-40')}
                   onPointerDown={(e) =>
@@ -47,12 +48,24 @@ export const Board = observer(function Board() {
             key={suit}
             data-drop={`fdn:${suit}`}
             className={cn(
-              'rounded-lg',
+              'relative rounded-lg',
               dropKey === `fdn:${suit}` && 'ring-2 ring-green-500',
             )}
           >
+            {/* Static backing card: keeps the pile visible while the top card
+                is still flying in (or flying back off on undo). */}
+            {state.foundations[suit] > 1 && (
+              <Card
+                still
+                card={{ rank: state.foundations[suit] - 1, suit }}
+                className="absolute inset-0"
+              />
+            )}
             {state.foundations[suit] > 0 ? (
-              <Card card={{ rank: state.foundations[suit], suit }} />
+              <Card
+                key={`${suit}${state.foundations[suit]}`}
+                card={{ rank: state.foundations[suit], suit }}
+              />
             ) : (
               <Slot>
                 <SuitIcon suit={suit} className="h-[35%] w-[35%] opacity-25" />
