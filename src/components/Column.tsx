@@ -31,7 +31,7 @@ export const Column = observer(function Column({ col }: { col: number }) {
               key={r}
               card={card}
               className={cn(
-                '-mb-[100%] cursor-pointer last:mb-0',
+                'cursor-pointer overflow-hidden mt-[-110%] first:mt-0',
                 draggable && 'touch-none',
                 isDragging(r) && 'opacity-40',
               )}

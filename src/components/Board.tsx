@@ -36,9 +36,6 @@ export const Board = observer(function Board() {
                 />
               ) : (
                 <Slot className="cursor-default">
-                  <span className="text-sm uppercase tracking-wide text-gray-300">
-                    free
-                  </span>
                 </Slot>
               )}
             </div>

@@ -28,7 +28,11 @@ export function sameColor(a: Card, b: Card): boolean {
 
 // The card's rank character, e.g. "J".
 export function cardLabel(card: Card): string {
-  return RANK_CHARS[card.rank - 1]
+  const label = RANK_CHARS[card.rank - 1];
+  if (label === 'T') {
+    return '10';
+  }
+  return label;
 }
 
 // Parse a 2-char code like "JD" into a card object.

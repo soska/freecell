@@ -7,7 +7,7 @@ import { store } from './store'
 
 const App = observer(function App() {
   return (
-    <div className="flex min-h-screen w-full flex-col gap-3 p-4">
+    <div className="flex min-h-screen w-full flex-col gap-3 p-4 bg-green-700">
       <Toolbar />
 
       {store.message && (
