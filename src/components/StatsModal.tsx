@@ -1,17 +1,14 @@
+import { observer } from 'mobx-react-lite'
 import { winPercent } from '../game/stats'
-import type { Stats } from '../game/types'
+import { store } from '../store'
 import { BTN } from '../ui'
 
-interface StatsModalProps {
-  stats: Stats
-  onClose: () => void
-}
-
-export function StatsModal({ stats, onClose }: StatsModalProps) {
+export const StatsModal = observer(function StatsModal() {
+  const { stats } = store
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black/40"
-      onClick={onClose}
+      onClick={() => store.setShowStats(false)}
     >
       <div
         className="min-w-[260px] rounded-lg bg-white px-7 py-5"
@@ -25,10 +22,10 @@ export function StatsModal({ stats, onClose }: StatsModalProps) {
           <li className="py-0.5">Current streak: {stats.currentStreak}</li>
           <li className="py-0.5">Longest winning streak: {stats.longestStreak}</li>
         </ul>
-        <button className={BTN} onClick={onClose}>
+        <button className={BTN} onClick={() => store.setShowStats(false)}>
           Close
         </button>
       </div>
     </div>
   )
-}
+})

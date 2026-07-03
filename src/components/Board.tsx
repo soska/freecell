@@ -1,31 +1,13 @@
+import { observer } from 'mobx-react-lite'
 import { isRed, SUIT_SYMBOLS, SUITS } from '../game/deck'
-import type { GameState } from '../game/types'
+import { store } from '../store'
 import { cx, LABEL_LG, SLOT } from '../ui'
 import { Card } from './Card'
 import { Column } from './Column'
-import type { CardPointerDown, DragState, DropKey } from './dnd'
 
-interface BoardProps {
-  state: GameState
-  drag: DragState | null
-  dropKey: DropKey | null
-  onColumnCardClick: (col: number, cardIndex: number) => void
-  onColumnCardDoubleClick: (col: number, cardIndex: number) => void
-  onFreeCellClick: (idx: number) => void
-  onFreeCellDoubleClick: (idx: number) => void
-  onCardPointerDown: CardPointerDown
-}
+export const Board = observer(function Board() {
+  const { state, drag, dropKey } = store
 
-export function Board({
-  state,
-  drag,
-  dropKey,
-  onColumnCardClick,
-  onColumnCardDoubleClick,
-  onFreeCellClick,
-  onFreeCellDoubleClick,
-  onCardPointerDown,
-}: BoardProps) {
   return (
     <>
       <section className="grid grid-cols-8 gap-2">
@@ -34,7 +16,7 @@ export function Board({
             key={`f${idx}`}
             data-drop={`free:${idx}`}
             onPointerDown={(e) =>
-              card && onCardPointerDown(e, { kind: 'free', idx }, [card])
+              card && store.onCardPointerDown(e, { kind: 'free', idx }, [card])
             }
             className={cx(
               SLOT,
@@ -42,8 +24,8 @@ export function Board({
               dropKey === `free:${idx}` && 'ring-2 ring-inset ring-green-500',
               drag?.source.kind === 'free' && drag.source.idx === idx && 'opacity-40',
             )}
-            onClick={() => onFreeCellClick(idx)}
-            onDoubleClick={() => onFreeCellDoubleClick(idx)}
+            onClick={() => store.onFreeCellClick(idx)}
+            onDoubleClick={() => store.onFreeCellDoubleClick(idx)}
           >
             {card ? (
               <Card card={card} className={LABEL_LG} />
@@ -79,19 +61,10 @@ export function Board({
       </section>
 
       <section className="grid flex-1 grid-cols-8 gap-2">
-        {state.columns.map((cards, col) => (
-          <Column
-            key={col}
-            col={col}
-            cards={cards}
-            drag={drag}
-            dropKey={dropKey}
-            onCardClick={onColumnCardClick}
-            onCardDoubleClick={onColumnCardDoubleClick}
-            onCardPointerDown={onCardPointerDown}
-          />
+        {state.columns.map((_cards, col) => (
+          <Column key={col} col={col} />
         ))}
       </section>
     </>
   )
-}
+})

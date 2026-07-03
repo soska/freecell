@@ -1,51 +1,33 @@
+import { observer } from 'mobx-react-lite'
+import { store } from '../store'
 import { BTN } from '../ui'
 
-interface ToolbarProps {
-  dealNumber: number
-  canUndo: boolean
-  canFinish: boolean
-  onNewGame: () => void
-  onSelectGame: () => void
-  onRestart: () => void
-  onUndo: () => void
-  onFinish: () => void
-  onShowStats: () => void
-}
-
-export function Toolbar({
-  dealNumber,
-  canUndo,
-  canFinish,
-  onNewGame,
-  onSelectGame,
-  onRestart,
-  onUndo,
-  onFinish,
-  onShowStats,
-}: ToolbarProps) {
+export const Toolbar = observer(function Toolbar() {
   return (
     <header className="flex flex-wrap items-center gap-1.5">
-      <button className={BTN} onClick={onNewGame}>
+      <button className={BTN} onClick={() => store.newGame()}>
         New Game
       </button>
-      <button className={BTN} onClick={onSelectGame}>
+      <button className={BTN} onClick={() => store.selectGame()}>
         Select Game #
       </button>
-      <button className={BTN} onClick={onRestart}>
+      <button className={BTN} onClick={() => store.restart()}>
         Restart
       </button>
-      <button className={BTN} onClick={onUndo} disabled={!canUndo}>
+      <button className={BTN} onClick={() => store.undo()} disabled={!store.canUndo}>
         Undo
       </button>
-      {canFinish && (
-        <button className={BTN} onClick={onFinish}>
+      {store.canFinish && (
+        <button className={BTN} onClick={() => store.finish()}>
           Finish
         </button>
       )}
-      <button className={BTN} onClick={onShowStats}>
+      <button className={BTN} onClick={() => store.setShowStats(true)}>
         Statistics
       </button>
-      <span className="ml-auto text-[13px] text-gray-500">Deal #{dealNumber}</span>
+      <span className="ml-auto text-[13px] text-gray-500">
+        Deal #{store.state.dealNumber}
+      </span>
     </header>
   )
-}
+})

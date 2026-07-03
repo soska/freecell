@@ -1,28 +1,14 @@
-import type { Card as CardModel } from '../game/deck'
+import { observer } from 'mobx-react-lite'
 import { isRun } from '../game/rules'
+import { store } from '../store'
 import { CARD, cx, SLOT } from '../ui'
 import { Card } from './Card'
-import type { CardPointerDown, DragState, DropKey } from './dnd'
 
-interface ColumnProps {
-  col: number
-  cards: CardModel[]
-  drag: DragState | null
-  dropKey: DropKey | null
-  onCardClick: (col: number, cardIndex: number) => void
-  onCardDoubleClick: (col: number, cardIndex: number) => void
-  onCardPointerDown: CardPointerDown
-}
+export const Column = observer(function Column({ col }: { col: number }) {
+  const cards = store.state.columns[col]
+  const drag = store.drag
+  const dropKey = store.dropKey
 
-export function Column({
-  col,
-  cards,
-  drag,
-  dropKey,
-  onCardClick,
-  onCardDoubleClick,
-  onCardPointerDown,
-}: ColumnProps) {
   const isDragging = (r: number) =>
     drag?.source.kind === 'column' &&
     drag.source.col === col &&
@@ -45,7 +31,11 @@ export function Column({
               key={r}
               onPointerDown={(e) =>
                 draggable &&
-                onCardPointerDown(e, { kind: 'column', col, cardIndex: r }, cards.slice(r))
+                store.onCardPointerDown(
+                  e,
+                  { kind: 'column', col, cardIndex: r },
+                  cards.slice(r),
+                )
               }
               className={cx(
                 CARD,
@@ -53,8 +43,8 @@ export function Column({
                 draggable && 'touch-none',
                 isDragging(r) && 'opacity-40',
               )}
-              onClick={() => onCardClick(col, r)}
-              onDoubleClick={() => onCardDoubleClick(col, r)}
+              onClick={() => store.onColumnCardClick(col, r)}
+              onDoubleClick={() => store.onColumnCardDoubleClick(col, r)}
             >
               <Card card={card} />
             </div>
@@ -63,4 +53,4 @@ export function Column({
       )}
     </div>
   )
-}
+})

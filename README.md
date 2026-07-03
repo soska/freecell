@@ -1,8 +1,8 @@
 # FreeCell (Windows XP edition)
 
 A static, client-side React + TypeScript + Vite reimplementation of XP FreeCell.
-Styled with Tailwind v4; drag-and-drop uses Motion. Rules match the spec exactly;
-visuals are intentionally sparse for now.
+State is managed with MobX; styled with Tailwind v4; drag-and-drop uses Motion.
+Rules match the spec exactly; visuals are intentionally sparse for now.
 
 ## Run
 
@@ -27,13 +27,19 @@ Game logic (pure, framework-free, fully typed):
 - `src/game/stats.ts` — statistics + in-progress game persistence (localStorage).
 - `src/game/game.test.ts` — verifies the §16 checklist (deals #1 and #11982, etc.).
 
-UI:
+State + UI:
 
-- `src/hooks/useFreecell.ts` — owns all game + drag state and orchestrates moves.
-- `src/components/` — `Board`, `Column`, `Card`, `Toolbar`, `DragGhost`,
-  `StatsModal` (`dnd.ts` holds the shared drag types).
+- `src/store.ts` — `GameStore`, a thin MobX class that wraps the pure engine.
+  The board is an immutable `GameState` held in an `observable.ref`; each
+  `@action` recomputes the next state via the engine, so the engine stays pure
+  and testable and undo remains a plain snapshot stack. `@computed` values
+  (`won`, `stuck`, `canFinish`, `canUndo`) replace `useMemo`; `reaction`s handle
+  persistence and win-settling. Exported as a singleton `store`.
+- `src/components/` — `observer` components that read the `store` directly:
+  `Board`, `Column`, `Card`, `Toolbar`, `DragGhost`, `StatsModal` (`dnd.ts` holds
+  the shared drag types).
 - `src/ui.ts` — `cx()` + shared Tailwind class constants.
-- `src/App.tsx` — composes the hook and components.
+- `src/App.tsx` — composes the components.
 
 ## Design choices (where the spec left them open)
 

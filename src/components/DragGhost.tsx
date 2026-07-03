@@ -1,21 +1,17 @@
-import { motion, type MotionValue } from 'motion/react'
+import { observer } from 'mobx-react-lite'
+import { motion } from 'motion/react'
+import { store } from '../store'
 import { CARD, cx } from '../ui'
 import { Card } from './Card'
-import type { DragState } from './dnd'
-
-interface DragGhostProps {
-  drag: DragState | null
-  x: MotionValue<number>
-  y: MotionValue<number>
-}
 
 // The floating run that follows the pointer during a drag.
-export function DragGhost({ drag, x, y }: DragGhostProps) {
+export const DragGhost = observer(function DragGhost() {
+  const drag = store.drag
   if (!drag) return null
   return (
     <motion.div
       className="pointer-events-none fixed left-0 top-0 z-50"
-      style={{ x, y, width: drag.width }}
+      style={{ x: store.ghostX, y: store.ghostY, width: drag.width }}
       initial={{ scale: 0.96 }}
       animate={{ scale: 1.04 }}
     >
@@ -26,4 +22,4 @@ export function DragGhost({ drag, x, y }: DragGhostProps) {
       ))}
     </motion.div>
   )
-}
+})
