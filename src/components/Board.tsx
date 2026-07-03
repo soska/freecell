@@ -1,9 +1,10 @@
 import { observer } from 'mobx-react-lite'
-import { isRed, SUIT_SYMBOLS, SUITS } from '../game/deck'
+import { isRed, SUITS } from '../game/deck'
 import { store } from '../store'
 import { cx, LABEL_LG, SLOT } from '../ui'
 import { Card } from './Card'
 import { Column } from './Column'
+import { SuitIcon } from './suits'
 
 export const Board = observer(function Board() {
   const { state, drag, dropKey } = store
@@ -50,11 +51,13 @@ export const Board = observer(function Board() {
             {state.foundations[suit] > 0 ? (
               <Card card={{ rank: state.foundations[suit], suit }} className={LABEL_LG} />
             ) : (
-              <span
-                className={cx(LABEL_LG, isRed({ rank: 1, suit }) ? 'text-red-200' : 'text-gray-200')}
-              >
-                {SUIT_SYMBOLS[suit]}
-              </span>
+              <SuitIcon
+                suit={suit}
+                className={cx(
+                  'h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)]',
+                  isRed({ rank: 1, suit }) ? 'text-red-200' : 'text-gray-200',
+                )}
+              />
             )}
           </div>
         ))}
