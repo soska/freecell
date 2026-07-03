@@ -10,7 +10,9 @@ interface BoardProps {
   drag: DragState | null
   dropKey: DropKey | null
   onColumnCardClick: (col: number, cardIndex: number) => void
+  onColumnCardDoubleClick: (col: number, cardIndex: number) => void
   onFreeCellClick: (idx: number) => void
+  onFreeCellDoubleClick: (idx: number) => void
   onCardPointerDown: CardPointerDown
 }
 
@@ -19,7 +21,9 @@ export function Board({
   drag,
   dropKey,
   onColumnCardClick,
+  onColumnCardDoubleClick,
   onFreeCellClick,
+  onFreeCellDoubleClick,
   onCardPointerDown,
 }: BoardProps) {
   return (
@@ -39,6 +43,7 @@ export function Board({
               drag?.source.kind === 'free' && drag.source.idx === idx && 'opacity-40',
             )}
             onClick={() => onFreeCellClick(idx)}
+            onDoubleClick={() => onFreeCellDoubleClick(idx)}
           >
             {card ? (
               <Card card={card} className={LABEL_LG} />
@@ -82,6 +87,7 @@ export function Board({
             drag={drag}
             dropKey={dropKey}
             onCardClick={onColumnCardClick}
+            onCardDoubleClick={onColumnCardDoubleClick}
             onCardPointerDown={onCardPointerDown}
           />
         ))}

@@ -10,6 +10,7 @@ interface ColumnProps {
   drag: DragState | null
   dropKey: DropKey | null
   onCardClick: (col: number, cardIndex: number) => void
+  onCardDoubleClick: (col: number, cardIndex: number) => void
   onCardPointerDown: CardPointerDown
 }
 
@@ -19,6 +20,7 @@ export function Column({
   drag,
   dropKey,
   onCardClick,
+  onCardDoubleClick,
   onCardPointerDown,
 }: ColumnProps) {
   const isDragging = (r: number) =>
@@ -52,6 +54,7 @@ export function Column({
                 isDragging(r) && 'opacity-40',
               )}
               onClick={() => onCardClick(col, r)}
+              onDoubleClick={() => onCardDoubleClick(col, r)}
             >
               <Card card={card} />
             </div>

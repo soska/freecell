@@ -7,7 +7,13 @@ import {
   isSafeAutoplay,
   maxSupermove,
 } from './rules'
-import { bestDest, newGame, playerMove, canMove } from './engine'
+import {
+  bestDest,
+  canMove,
+  canSendToFoundation,
+  newGame,
+  playerMove,
+} from './engine'
 import type { GameState } from './types'
 
 const card = (rank: number, suit: Suit): Card => ({ rank, suit })
@@ -170,17 +176,17 @@ describe('tap-to-move: bestDest priority', () => {
   const from = (col: number, cardIndex = 0) =>
     ({ kind: 'column', col, cardIndex }) as const
 
-  it('sends an ace home (foundation is priority 1)', () => {
+  it('sends an ace home when no tableau move exists', () => {
     const s = mkState([[card(1, 'H')]])
     expect(bestDest(s, from(0))).toEqual({ kind: 'foundation', suit: 'H' })
   })
 
-  it('prefers the foundation over a legal tableau target', () => {
-    // 2♥ can sit on 3♠, but its foundation (H already at A) wins.
+  it('prefers a tableau build over the foundation (tableau is priority 1)', () => {
+    // 2♥ could bank (H already at A), but building onto 3♠ wins.
     const s = mkState([[card(2, 'H')], [card(3, 'S')]], {
       foundations: { C: 0, D: 0, H: 1, S: 0 },
     })
-    expect(bestDest(s, from(0))).toEqual({ kind: 'foundation', suit: 'H' })
+    expect(bestDest(s, from(0))).toEqual({ kind: 'column', col: 1 })
   })
 
   it('prefers a non-empty column to build on over an empty column', () => {
@@ -205,6 +211,12 @@ describe('tap-to-move: bestDest priority', () => {
     // Q♥ sits on K♣; tapping Q♥ (leaving K♣ behind) -> the empty column.
     const s = mkState([[card(13, 'C'), card(12, 'H')], []])
     expect(bestDest(s, from(0, 1))).toEqual({ kind: 'column', col: 1 })
+  })
+
+  it('canSendToFoundation flags a bankable single card (double-tap)', () => {
+    const s = mkState([[card(1, 'H')], [card(2, 'H')]])
+    expect(canSendToFoundation(s, from(0))).toBe(true) // A♥ -> empty H foundation
+    expect(canSendToFoundation(s, from(1))).toBe(false) // 2♥ blocked, H empty
   })
 })
 

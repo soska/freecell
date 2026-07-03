@@ -85,21 +85,16 @@ export function canMove(state: GameState, source: Source, dest: Dest): boolean {
 }
 
 // The best destination for a one-tap "smart move" of `source`, or null if
-// nothing legal exists. Priority: foundation, then tableau (a non-empty column
-// to build on, else an empty column), then a free cell.
+// nothing legal exists. Priority: tableau (a non-empty column to build on, else
+// an empty column), then the foundation, then a free cell. (Banking to the
+// foundation on demand is the double-tap gesture — see the UI layer.)
 export function bestDest(state: GameState, source: Source): Dest | null {
   const cards = sourceCards(state, source)
   if (!cards || !isRun(cards)) return null
   const single = cards.length === 1
   const moving = cards[0]
 
-  // 1. Foundation (single card only).
-  if (single) {
-    const fdn: Dest = { kind: 'foundation', suit: moving.suit }
-    if (canMove(state, source, fdn)) return fdn
-  }
-
-  // 2. Tableau: prefer a non-empty column we can build on; fall back to an
+  // 1. Tableau: prefer a non-empty column we can build on; fall back to an
   // empty column — but never shuffle a whole column into another empty one.
   const spansWholeColumn = source.kind === 'column' && source.cardIndex === 0
   let emptyCol: Dest | null = null
@@ -114,6 +109,12 @@ export function bestDest(state: GameState, source: Source): Dest | null {
   }
   if (emptyCol) return emptyCol
 
+  // 2. Foundation (single card only).
+  if (single) {
+    const fdn: Dest = { kind: 'foundation', suit: moving.suit }
+    if (canMove(state, source, fdn)) return fdn
+  }
+
   // 3. Free cell (single card only).
   if (single) {
     for (let i = 0; i < state.freeCells.length; i++) {
@@ -122,6 +123,14 @@ export function bestDest(state: GameState, source: Source): Dest | null {
     }
   }
   return null
+}
+
+// Can this source be banked to its foundation right now? (The double-tap
+// gesture, and the check the tap debounce uses.)
+export function canSendToFoundation(state: GameState, source: Source): boolean {
+  const cards = sourceCards(state, source)
+  if (!cards || cards.length !== 1) return false
+  return canMove(state, source, { kind: 'foundation', suit: cards[0].suit })
 }
 
 // Apply a single validated move and return the new state. Returns the same

@@ -42,7 +42,9 @@ export default function App() {
         drag={g.drag}
         dropKey={g.dropKey}
         onColumnCardClick={g.onColumnCardClick}
+        onColumnCardDoubleClick={g.onColumnCardDoubleClick}
         onFreeCellClick={g.onFreeCellClick}
+        onFreeCellDoubleClick={g.onFreeCellDoubleClick}
         onCardPointerDown={g.onCardPointerDown}
       />
 
@@ -53,8 +55,9 @@ export default function App() {
       )}
 
       <footer className="text-xs text-gray-500">
-        Tap a card (or run) to send it to the best spot — foundation, then
-        tableau, then a free cell. Drag for manual placement. Unlimited undo.
+        Tap a card (or run) to move it to the best spot — tableau, then
+        foundation, then a free cell. Double-tap sends a card to its foundation.
+        Drag for manual placement. Unlimited undo.
       </footer>
     </div>
   )
