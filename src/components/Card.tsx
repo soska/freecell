@@ -9,11 +9,15 @@ interface CardProps {
 // Renders a card's rank + suit label, colored red or black.
 export function Card({ card, className = LABEL }: CardProps) {
   return (
-    <span className={cx(className, isRed(card) ? 'color-redcard' : 'color-blackcard')}>
-      <div className="flex items-center justify-center">
-        {cardLabel(card)}
-        <span className="text-xs">{cardSuitSymbol(card)}</span>
-      </div>
-    </span>
+    <div
+      className={cx(
+        className,
+        'flex items-center justify-center',
+        isRed(card) ? 'color-redcard' : 'color-blackcard',
+      )}
+    >
+      {cardLabel(card)}
+      <span className="text-xs">{cardSuitSymbol(card)}</span>
+    </div>
   )
 }
