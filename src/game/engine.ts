@@ -84,6 +84,46 @@ export function canMove(state: GameState, source: Source, dest: Dest): boolean {
   return cards.length <= capacity
 }
 
+// The best destination for a one-tap "smart move" of `source`, or null if
+// nothing legal exists. Priority: foundation, then tableau (a non-empty column
+// to build on, else an empty column), then a free cell.
+export function bestDest(state: GameState, source: Source): Dest | null {
+  const cards = sourceCards(state, source)
+  if (!cards || !isRun(cards)) return null
+  const single = cards.length === 1
+  const moving = cards[0]
+
+  // 1. Foundation (single card only).
+  if (single) {
+    const fdn: Dest = { kind: 'foundation', suit: moving.suit }
+    if (canMove(state, source, fdn)) return fdn
+  }
+
+  // 2. Tableau: prefer a non-empty column we can build on; fall back to an
+  // empty column — but never shuffle a whole column into another empty one.
+  const spansWholeColumn = source.kind === 'column' && source.cardIndex === 0
+  let emptyCol: Dest | null = null
+  for (let c = 0; c < state.columns.length; c++) {
+    const dest: Dest = { kind: 'column', col: c }
+    if (!canMove(state, source, dest)) continue
+    if (state.columns[c].length === 0) {
+      if (!emptyCol && !spansWholeColumn) emptyCol = dest
+    } else {
+      return dest
+    }
+  }
+  if (emptyCol) return emptyCol
+
+  // 3. Free cell (single card only).
+  if (single) {
+    for (let i = 0; i < state.freeCells.length; i++) {
+      const dest: Dest = { kind: 'free', idx: i }
+      if (canMove(state, source, dest)) return dest
+    }
+  }
+  return null
+}
+
 // Apply a single validated move and return the new state. Returns the same
 // state reference (unchanged) if the move is illegal.
 export function applyMove(state: GameState, source: Source, dest: Dest): GameState {

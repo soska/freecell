@@ -7,10 +7,24 @@ import {
   isSafeAutoplay,
   maxSupermove,
 } from './rules'
-import { newGame, playerMove, canMove } from './engine'
+import { bestDest, newGame, playerMove, canMove } from './engine'
 import type { GameState } from './types'
 
 const card = (rank: number, suit: Suit): Card => ({ rank, suit })
+
+// Build a GameState from partial columns (padded to 8) with optional overrides.
+function mkState(cols: Card[][], overrides: Partial<GameState> = {}): GameState {
+  const columns = cols.map((c) => c.slice())
+  while (columns.length < 8) columns.push([])
+  return {
+    dealNumber: 1,
+    freeCells: [null, null, null, null],
+    foundations: { C: 0, D: 0, H: 0, S: 0 },
+    columns,
+    started: false,
+    ...overrides,
+  }
+}
 
 // Render dealt columns as the spec's printed grid (top row -> bottom row).
 function gridFromCols(cols: string[][]): string {
@@ -149,6 +163,48 @@ describe('autoplay bundled into the move + fixed point', () => {
     expect(res.state.foundations.H).toBe(1)
     expect(res.state.columns[0].length).toBe(0)
     expect(res.state.freeCells[0]).toEqual(card(5, 'C'))
+  })
+})
+
+describe('tap-to-move: bestDest priority', () => {
+  const from = (col: number, cardIndex = 0) =>
+    ({ kind: 'column', col, cardIndex }) as const
+
+  it('sends an ace home (foundation is priority 1)', () => {
+    const s = mkState([[card(1, 'H')]])
+    expect(bestDest(s, from(0))).toEqual({ kind: 'foundation', suit: 'H' })
+  })
+
+  it('prefers the foundation over a legal tableau target', () => {
+    // 2♥ can sit on 3♠, but its foundation (H already at A) wins.
+    const s = mkState([[card(2, 'H')], [card(3, 'S')]], {
+      foundations: { C: 0, D: 0, H: 1, S: 0 },
+    })
+    expect(bestDest(s, from(0))).toEqual({ kind: 'foundation', suit: 'H' })
+  })
+
+  it('prefers a non-empty column to build on over an empty column', () => {
+    // 5♥ could go to empty col1 or onto 6♠ in col2 — the build wins.
+    const s = mkState([[card(5, 'H')], [], [card(6, 'S')]])
+    expect(bestDest(s, from(0))).toEqual({ kind: 'column', col: 2 })
+  })
+
+  it('falls back to a free cell when no foundation/tableau move exists', () => {
+    const kings = Array.from({ length: 7 }, () => [card(13, 'S')])
+    const s = mkState([[card(5, 'H')], ...kings])
+    expect(bestDest(s, from(0))).toEqual({ kind: 'free', idx: 0 })
+  })
+
+  it('does not shuffle a whole column into an empty column', () => {
+    // Lone 5♥ with empty columns available -> free cell, not a pointless move.
+    const s = mkState([[card(5, 'H')], []])
+    expect(bestDest(s, from(0))).toEqual({ kind: 'free', idx: 0 })
+  })
+
+  it('does use an empty column for a partial run with no build target', () => {
+    // Q♥ sits on K♣; tapping Q♥ (leaving K♣ behind) -> the empty column.
+    const s = mkState([[card(13, 'C'), card(12, 'H')], []])
+    expect(bestDest(s, from(0, 1))).toEqual({ kind: 'column', col: 1 })
   })
 })
 

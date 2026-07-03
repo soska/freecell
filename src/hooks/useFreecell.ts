@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { animate, useMotionValue } from 'motion/react'
 import type { Card, Suit } from '../game/deck'
 import {
+  bestDest,
   canMove,
   finishNow,
   isTriviallyWinnable,
   newGame,
   playerMove,
-  sourceCards,
 } from '../game/engine'
 import { isRun, isStuck, isWon } from '../game/rules'
 import {
@@ -58,7 +58,6 @@ function parseDest(key: DropKey): Dest | null {
 export function useFreecell() {
   const [state, setState] = useState<GameState>(() => loadGame() ?? newGame(randomDeal()))
   const [history, setHistory] = useState<GameState[]>([]) // pre-move snapshots
-  const [selected, setSelected] = useState<Source | null>(null)
   const [stats, setStats] = useState(loadStats)
   const [message, setMessage] = useState('')
   const [resolved, setResolved] = useState(false) // win/loss already counted
@@ -108,7 +107,6 @@ export function useFreecell() {
     settleAbandoned()
     setState(newGame(dealNumber))
     setHistory([])
-    setSelected(null)
     setResolved(false)
     setMessage('')
     clearGame()
@@ -133,7 +131,6 @@ export function useFreecell() {
     settleAbandoned()
     setState(newGame(state.dealNumber))
     setHistory([])
-    setSelected(null)
     setResolved(false)
     setMessage('')
   }
@@ -146,56 +143,48 @@ export function useFreecell() {
     }
     setState(history[history.length - 1])
     setHistory(history.slice(0, -1))
-    setSelected(null)
     setMessage('')
   }
 
   function handleFinish() {
     setHistory([...history, state])
     setState(finishNow(state))
-    setSelected(null)
   }
 
-  // Attempt a move; update state/history/selection.
+  // Attempt a move; update state/history.
   function tryMove(source: Source, dest: Dest) {
     const result = playerMove(state, source, dest)
     if (!result.moved) {
       flash('Illegal move.')
-      setSelected(null)
       return
     }
     setHistory([...history, result.prev])
     setState(result.state)
-    setSelected(null)
     setMessage('')
   }
 
-  // ---- Click handlers ----
+  // ---- Tap-to-move: send a card/run to its best legal destination ----
+
+  function smartMove(source: Source) {
+    const dest = bestDest(state, source)
+    if (dest) {
+      tryMove(source, dest)
+    } else {
+      flash('No move available.')
+    }
+  }
 
   function onColumnCardClick(col: number, cardIndex: number) {
     if (suppressClickRef.current) {
       suppressClickRef.current = false
       return // click synthesized after a drag
     }
-    if (selected) {
-      if (selected.kind === 'column' && selected.col === col) {
-        setSelected(null) // clicking the selected source column deselects
-        return
-      }
-      tryMove(selected, { kind: 'column', col })
-      return
-    }
     const cards = state.columns[col].slice(cardIndex)
     if (!isRun(cards)) {
-      flash('That is not a movable run (must descend & alternate color).')
+      flash('That run is blocked (must descend & alternate color).')
       return
     }
-    setSelected({ kind: 'column', col, cardIndex })
-    setMessage('')
-  }
-
-  function onEmptyColumnClick(col: number) {
-    if (selected) tryMove(selected, { kind: 'column', col })
+    smartMove({ kind: 'column', col, cardIndex })
   }
 
   function onFreeCellClick(idx: number) {
@@ -203,35 +192,7 @@ export function useFreecell() {
       suppressClickRef.current = false
       return
     }
-    const card = state.freeCells[idx]
-    if (selected) {
-      if (selected.kind === 'free' && selected.idx === idx) {
-        setSelected(null)
-        return
-      }
-      if (card === null) {
-        tryMove(selected, { kind: 'free', idx })
-      } else {
-        flash('That free cell is occupied.')
-        setSelected(null)
-      }
-      return
-    }
-    if (card) {
-      setSelected({ kind: 'free', idx })
-      setMessage('')
-    }
-  }
-
-  function onFoundationClick(suit: Suit) {
-    if (selected) tryMove(selected, { kind: 'foundation', suit })
-  }
-
-  // Double-click a movable card -> send to its foundation if legal.
-  function sendToFoundation(source: Source) {
-    const cards = sourceCards(state, source)
-    if (!cards || cards.length !== 1) return
-    tryMove(source, { kind: 'foundation', suit: cards[0].suit })
+    if (state.freeCells[idx]) smartMove({ kind: 'free', idx })
   }
 
   // ---- Pointer-based drag & drop (mouse + touch + pen) ----
@@ -266,7 +227,6 @@ export function useFreecell() {
       if (!d.moved) {
         if (Math.hypot(px - d.startX, py - d.startY) < DRAG_THRESHOLD) return
         d.moved = true
-        setSelected(null)
         ghostX.set(px - d.offsetX)
         ghostY.set(py - d.offsetY)
         setDrag({ source: d.source, cards: d.cards, width: d.width })
@@ -321,7 +281,6 @@ export function useFreecell() {
   return {
     state,
     stats,
-    selected,
     message,
     won,
     stuck,
@@ -339,10 +298,7 @@ export function useFreecell() {
     handleUndo,
     handleFinish,
     onColumnCardClick,
-    onEmptyColumnClick,
     onFreeCellClick,
-    onFoundationClick,
-    sendToFoundation,
     onCardPointerDown,
   }
 }

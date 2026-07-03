@@ -39,9 +39,11 @@ UI:
 
 - **Undo:** unlimited (the spec's recommended modern upgrade). Each undo reverts one
   player move plus its bundled auto-plays. Undo is disabled once a game is won.
-- **Interaction:** click-to-pick-up, click-to-drop. Clicking a card selects it plus
-  every card below it (must form a valid run). Double-click sends a card to its
-  foundation. Empty free cells / empty columns are clickable drop targets.
+- **Interaction:** two ways to move. **Tap** a card or run to auto-send it to the
+  best legal spot — foundation first, then a tableau column to build on (falling
+  back to an empty column), then a free cell. **Drag** (mouse/touch/pen) for manual
+  placement onto any legal target. `bestDest` in `engine.ts` encodes the tap
+  priority and is unit-tested.
 - **"Started" threshold for stats:** a game counts once the first move is made.
   Abandoning a started, un-won game (New / Select / Restart) records a loss.
 - **Autoplay:** Microsoft conservative rule by default (7♦ waits for both black 6s),
