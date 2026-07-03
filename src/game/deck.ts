@@ -14,13 +14,6 @@ export const SUIT_CHARS = 'CDHS' // Clubs, Diamonds, Hearts, Spades
 export const SUITS: Suit[] = ['C', 'D', 'H', 'S']
 export const RED_SUITS = new Set<Suit>(['D', 'H'])
 
-export const SUIT_SYMBOLS: Record<Suit, string> = {
-  C: '♣',
-  D: '♦',
-  H: '♥',
-  S: '♠',
-}
-
 export function isRed(card: Card): boolean {
   return RED_SUITS.has(card.suit)
 }
@@ -33,13 +26,9 @@ export function sameColor(a: Card, b: Card): boolean {
   return isRed(a) === isRed(b)
 }
 
-// Human-readable label, e.g. "J♦".
+// The card's rank character, e.g. "J".
 export function cardLabel(card: Card): string {
   return RANK_CHARS[card.rank - 1]
-}
-
-export function cardSuitSymbol(card: Card): string {
-  return SUIT_SYMBOLS[card.suit]
 }
 
 // Parse a 2-char code like "JD" into a card object.
