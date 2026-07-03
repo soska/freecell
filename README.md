@@ -36,9 +36,12 @@ State + UI:
   (`won`, `stuck`, `canFinish`, `canUndo`) replace `useMemo`; `reaction`s handle
   persistence and win-settling. Exported as a singleton `store`.
 - `src/components/` — `observer` components that read the `store` directly:
-  `Board`, `Column`, `Card`, `Toolbar`, `DragGhost`, `StatsModal` (`dnd.ts` holds
-  the shared drag types).
-- `src/ui.ts` — `cx()` + shared Tailwind class constants.
+  `Board`, `Column`, `Toolbar`, `DragGhost`, `StatsModal`, plus presentational
+  building blocks `Card` (a self-contained playing card that owns its shape,
+  corners and center pip), `Slot` (empty card-shaped placeholder), `Button`, and
+  `suits.tsx` (SVG suit glyphs). `dnd.ts` holds the shared drag types. Styling
+  lives in these components, not in shared class constants.
+- `src/lib/cn.ts` — `cn()`, a clsx + tailwind-merge class combiner.
 - `src/App.tsx` — composes the components.
 
 ## Design choices (where the spec left them open)

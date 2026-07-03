@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { winPercent } from '../game/stats'
 import { store } from '../store'
-import { BTN } from '../ui'
+import { Button } from './Button'
 
 export const StatsModal = observer(function StatsModal() {
   const { stats } = store
@@ -22,9 +22,7 @@ export const StatsModal = observer(function StatsModal() {
           <li className="py-0.5">Current streak: {stats.currentStreak}</li>
           <li className="py-0.5">Longest winning streak: {stats.longestStreak}</li>
         </ul>
-        <button className={BTN} onClick={() => store.setShowStats(false)}>
-          Close
-        </button>
+        <Button onClick={() => store.setShowStats(false)}>Close</Button>
       </div>
     </div>
   )

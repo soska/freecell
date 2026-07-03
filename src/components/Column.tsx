@@ -1,13 +1,13 @@
 import { observer } from 'mobx-react-lite'
 import { isRun } from '../game/rules'
+import { cn } from '../lib/cn'
 import { store } from '../store'
-import { CARD, cx, SLOT } from '../ui'
 import { Card } from './Card'
+import { Slot } from './Slot'
 
 export const Column = observer(function Column({ col }: { col: number }) {
   const cards = store.state.columns[col]
-  const drag = store.drag
-  const dropKey = store.dropKey
+  const { drag, dropKey } = store
 
   const isDragging = (r: number) =>
     drag?.source.kind === 'column' &&
@@ -16,19 +16,25 @@ export const Column = observer(function Column({ col }: { col: number }) {
 
   return (
     <div
-      className={cx('rounded-lg', dropKey === `col:${col}` && 'ring-2 ring-green-500')}
+      className={cn('rounded-lg', dropKey === `col:${col}` && 'ring-2 ring-green-500')}
       data-drop={`col:${col}`}
     >
       {cards.length === 0 ? (
-        <div className={cx(SLOT, 'cursor-default border-dashed text-gray-300')}>
-          <span className="text-sm uppercase tracking-wide">empty</span>
-        </div>
+        <Slot className="border-dashed">
+          <span className="text-sm uppercase tracking-wide text-gray-300">empty</span>
+        </Slot>
       ) : (
         cards.map((card, r) => {
           const draggable = isRun(cards.slice(r))
           return (
-            <div
+            <Card
               key={r}
+              card={card}
+              className={cn(
+                '-mb-[100%] cursor-pointer last:mb-0',
+                draggable && 'touch-none',
+                isDragging(r) && 'opacity-40',
+              )}
               onPointerDown={(e) =>
                 draggable &&
                 store.onCardPointerDown(
@@ -37,17 +43,9 @@ export const Column = observer(function Column({ col }: { col: number }) {
                   cards.slice(r),
                 )
               }
-              className={cx(
-                CARD,
-                'cursor-pointer bg-white',
-                draggable && 'touch-none',
-                isDragging(r) && 'opacity-40',
-              )}
               onClick={() => store.onColumnCardClick(col, r)}
               onDoubleClick={() => store.onColumnCardDoubleClick(col, r)}
-            >
-              <Card card={card} />
-            </div>
+            />
           )
         })
       )}

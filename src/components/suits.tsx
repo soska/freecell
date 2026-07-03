@@ -1,5 +1,6 @@
 import type { FC, SVGProps } from 'react'
 import type { Suit } from '../game/deck'
+import { cn } from '../lib/cn'
 
 // Suit glyphs as inline SVG components. They paint with `currentColor`, so the
 // surrounding text color (red/black) drives the fill — size them via className.
@@ -48,7 +49,9 @@ const ICONS: Record<Suit, FC<IconProps>> = {
   H: Heart,
 }
 
-export const SuitIcon: FC<IconProps & { suit: Suit }> = ({ suit, ...rest }) => {
+export const SuitIcon: FC<IconProps & { suit: Suit }> = ({ suit, className, ...rest }) => {
   const Icon = ICONS[suit]
-  return <Icon {...rest} />
+  const isRed = suit === 'H' || suit === 'D'
+  const classname = cn(isRed ? 'color-redcard' : 'color-blackcard', className)
+  return <Icon className={classname} {...rest} />
 }
