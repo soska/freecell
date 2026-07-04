@@ -4,78 +4,24 @@ import { cardCode, cardLabel, isRed, type Card as CardModel } from '../game/deck
 import { cn } from '../lib/cn'
 import { SuitIcon } from './suits'
 
-const pipDesigns = [
-  [
-    '___',
-    '___',
-    '_u_',
-    '___',
-    '___',
-  ],
-  [
-    '_u_',
-    '___',
-    '___',
-    '___',
-    '_d_',
-  ],
-  [
-    '_u_',
-    '___',
-    '_u_',
-    '___',
-    '_d_',
-  ],
-  [
-    'u_u',
-    '___',
-    '___',
-    '___',
-    'd_d',
-  ],
-  [
-    'u_u',
-    '___',
-    '_u_',
-    '___',
-    'd_d',
-  ],
-  [
-    'u_u',
-    '___',
-    'u_u',
-    '___',
-    'd_d',
-  ],
-  [
-    'u_u',
-    '_u_',
-    'u_u',
-    '___',
-    'd_d',
-  ],
-  [
-    'u_u',
-    '_u_',
-    'u_u',
-    '_d_',
-    'd_d',
-  ],
-  [
-    'u_u',
-    'u_u',
-    '_u_',
-    'd_d',
-    'd_d',
-  ],
-  [
-    'u_u',
-    'u_u',
-    'u_u',
-    'd_d',
-    'd_d',
-  ],
-]
+// Pip centers for ranks 2-10 in 0..1 coordinates of the pip field — the
+// classic layouts, including the floating odd pips (the 7's at ~1/3, the
+// 10's at ~1/3 and ~2/3) that a uniform grid can't express. A pip in the
+// bottom half renders rotated 180°; that's derived from y, not encoded.
+const L = 0.25
+const C = 0.5
+const R = 0.75
+const PIPS: Record<number, [number, number][]> = {
+  2: [[C, 0.2], [C, 0.8]],
+  3: [[C, 0.2], [C, 0.5], [C, 0.8]],
+  4: [[L, 0.2], [R, 0.2], [L, 0.8], [R, 0.8]],
+  5: [[L, 0.2], [R, 0.2], [C, 0.5], [L, 0.8], [R, 0.8]],
+  6: [[L, 0.2], [R, 0.2], [L, 0.5], [R, 0.5], [L, 0.8], [R, 0.8]],
+  7: [[L, 0.2], [R, 0.2], [C, 0.35], [L, 0.5], [R, 0.5], [L, 0.8], [R, 0.8]],
+  8: [[L, 0.2], [R, 0.2], [C, 0.35], [L, 0.5], [R, 0.5], [C, 0.65], [L, 0.8], [R, 0.8]],
+  9: [[L, 0.2], [R, 0.2], [L, 0.4], [R, 0.4], [C, 0.5], [L, 0.6], [R, 0.6], [L, 0.8], [R, 0.8]],
+  10: [[L, 0.2], [R, 0.2], [C, 0.32], [L, 0.4], [R, 0.4], [L, 0.6], [R, 0.6], [C, 0.68], [L, 0.8], [R, 0.8]],
+}
 
 
 const Pip = ({ card }: { card: CardModel }) => {
@@ -102,24 +48,21 @@ const Pip = ({ card }: { card: CardModel }) => {
     )
   }
 
-  const design = pipDesigns[card.rank - 1];
-  if (!design) {
-    return null;
-  }
-
-  const slots = design.join('').split('');
+  const pips = PIPS[card.rank]
+  if (!pips) return null
 
   return (
-    <div className="absolute inset-6  grid grid-cols-3 grid-rows-5">
-      {slots.map((slot, index) => (
-        <div key={index}>
-          {slot == '_' ? null :
-            <SuitIcon
-              suit={card.suit}
-              className={cn("h-full w-full", slot == 'd' && 'rotate-180')}
-            />
-          }
-        </div>
+    <div className="absolute inset-x-[14%] inset-y-[12%]">
+      {pips.map(([x, y], i) => (
+        <SuitIcon
+          key={i}
+          suit={card.suit}
+          style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
+          className={cn(
+            'absolute w-[24%] -translate-x-1/2 -translate-y-1/2',
+            y > 0.5 && 'rotate-180',
+          )}
+        />
       ))}
     </div>
   )
