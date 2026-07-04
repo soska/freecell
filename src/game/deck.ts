@@ -9,6 +9,8 @@ export interface Card {
   suit: Suit
 }
 
+
+
 export const RANK_CHARS = 'A23456789TJQK' // index 0 => Ace
 export const SUIT_CHARS = 'CDHS' // Clubs, Diamonds, Hearts, Spades
 export const SUITS: Suit[] = ['C', 'D', 'H', 'S']
