@@ -39,7 +39,7 @@ const Pip = ({ card }: { card: CardModel }) => {
     return (
       <div
         className={cn(
-          'absolute inset-x-[22%] inset-y-[16%] flex items-center justify-center rounded-md border-2',
+          'absolute inset-x-[22%] inset-y-[16%] flex items-center justify-center rounded-md border-2 bg-yellow-100',
           isRed(card) ? 'border-red-600/50' : 'border-gray-800/50',
         )}
       >
@@ -52,7 +52,7 @@ const Pip = ({ card }: { card: CardModel }) => {
   if (!pips) return null
 
   return (
-    <div className="absolute inset-x-[14%] inset-y-[12%]">
+    <div className="absolute inset-x-[14%] inset-y-[12%] bg-yellow-100">
       {pips.map(([x, y], i) => (
         <SuitIcon
           key={i}
@@ -78,15 +78,15 @@ interface CardProps extends HTMLMotionProps<'div'> {
 const CardLabel = ({ card }: { card: CardModel }) => {
   const isRed = card.suit === 'D' || card.suit === 'H';
   return (
-    <span className={cn('text-[clamp(0.8rem,1.9vw,1.6rem)] font-bold leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
+    <span className={cn('font-saira-extra-condensed text-[clamp(0.8rem,1.9vw,1.6rem)] font-light leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
   )
 }
 
 function Corner({ card, className }: { card: CardModel; className?: string }) {
   return (
-    <div className={cn('absolute flex flex-col items-center leading-none p-1', className)}>
+    <div className={cn('absolute flex flex-col items-center leading-none p-1 gap-1', className)}>
       <CardLabel card={card} />
-      <SuitIcon suit={card.suit} className="h-5 w-5" />
+      <SuitIcon suit={card.suit} className="size-4" />
     </div>
   )
 }
