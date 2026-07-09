@@ -27,9 +27,8 @@ import type { Dest, GameState, Source, Stats } from './game/types'
 import type { DragState, DropKey } from './components/dnd'
 
 const DRAG_THRESHOLD = 5 // px before a press becomes a drag (vs a click)
-const TAP_DOUBLE_MS = 250 // window to wait for a double-tap on a bankable card
-// const CASCADE_MS = 120 // delay between staggered autoplay/finish cards
-const CASCADE_MS = 60 // delay between staggered autoplay/finish cards
+const TAP_DOUBLE_MS = 160 // window to wait for a double-tap on a bankable card
+const CASCADE_MS = 30 // delay between staggered autoplay/finish cards
 
 function randomDeal(): number {
   return Math.floor(Math.random() * 1000000) + 1

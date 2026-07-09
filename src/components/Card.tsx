@@ -69,6 +69,17 @@ const Pip = ({ card }: { card: CardModel }) => {
 }
 
 
+// Tweak card move feel here. Higher stiffness = faster launch; lower damping =
+// more overshoot. These values should feel quick with a tiny settle, not bouncy.
+const CARD_LAYOUT_TRANSITION = {
+  type: 'spring' as const,
+  stiffness: 1000,
+  damping: 40,
+  mass: 0.75,
+  restDelta: 0.5,
+  restSpeed: 10,
+}
+
 interface CardProps extends HTMLMotionProps<'div'> {
   card: CardModel
   /** Skip layout animation — for the drag ghost and foundation backing card. */
@@ -106,7 +117,7 @@ export function Card({ card, still = false, className, ...props }: CardProps) {
       layout: true,
       layoutId: cardCode(card),
       transition: {
-        layout: { type: 'spring' as const, stiffness: 550, damping: 38 },
+        layout: CARD_LAYOUT_TRANSITION,
       },
       onLayoutAnimationStart: () => setFlying(true),
       onLayoutAnimationComplete: () => setFlying(false),
