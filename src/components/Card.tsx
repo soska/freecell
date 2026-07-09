@@ -52,7 +52,7 @@ const Pip = ({ card }: { card: CardModel }) => {
   if (!pips) return null
 
   return (
-    <div className="absolute inset-x-[14%] inset-y-[12%] bg-yellow-100">
+    <div className="card-pip">
       {pips.map(([x, y], i) => (
         <SuitIcon
           key={i}
@@ -78,15 +78,15 @@ interface CardProps extends HTMLMotionProps<'div'> {
 const CardLabel = ({ card }: { card: CardModel }) => {
   const isRed = card.suit === 'D' || card.suit === 'H';
   return (
-    <span className={cn('font-saira-extra-condensed text-[clamp(0.8rem,1.9vw,1.6rem)] font-light leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
+    <span className={cn('card-rank-label font-saira-extra-condensed font-semibold leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
   )
 }
 
 function Corner({ card, className }: { card: CardModel; className?: string }) {
   return (
-    <div className={cn('absolute flex flex-col items-center leading-none p-1 gap-1', className)}>
+    <div className={cn('absolute flex flex-col items-center leading-none p-[1.5] gap-1', className)}>
       <CardLabel card={card} />
-      <SuitIcon suit={card.suit} className="size-4" />
+      <SuitIcon suit={card.suit} className="card-corner-suit" />
     </div>
   )
 }
@@ -115,7 +115,7 @@ export function Card({ card, still = false, className, ...props }: CardProps) {
     <motion.div
       {...animation}
       className={cn(
-        'relative aspect-5/7 w-full select-none rounded-lg border-2 border-gray-700 bg-white shadow-xl shadow-black/20',
+        'card-size relative select-none rounded-lg border-2 border-gray-700 bg-white shadow-xl shadow-black/20',
         flying && 'z-10',
         className,
       )}

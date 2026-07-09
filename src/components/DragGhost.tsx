@@ -15,7 +15,7 @@ export const DragGhost = observer(function DragGhost() {
       animate={{ scale: 1.04 }}
     >
       {drag.cards.map((card, i) => (
-        <Card still key={i} card={card} className="-mb-[100%] shadow-xl last:mb-0" />
+        <Card still key={i} card={card} className="card-stack-card shadow-xl" />
       ))}
     </motion.div>
   )

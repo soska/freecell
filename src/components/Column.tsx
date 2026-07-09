@@ -32,7 +32,7 @@ export const Column = observer(function Column({ col }: { col: number }) {
               key={cardCode(card)}
               card={card}
               className={cn(
-                'cursor-pointer overflow-hidden mt-[-110%] first:mt-0',
+                'card-stack-card cursor-pointer overflow-hidden',
                 draggable && 'touch-none',
                 isDragging(r) && 'opacity-40',
               )}

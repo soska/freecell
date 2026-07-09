@@ -1,5 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Saira+Extra+Condensed:wght@300;400;500&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Saira+Extra+Condensed:wght@300;400;500&display=swap'); */
 @import 'tailwindcss';
+
+
+:root {
+  --card-ratio: 1.4;
+  --card-w: 10vw;
+  --card-h: calc(var(--card-w) * var(--card-ratio));
+  --card-gap: 14px;
+  --card-stack-gap: min(calc(var(--card-w) * 0.3), 4.5vh);
+  /* --card-stack-gap: 41px; */
+  --card-rank-size: calc(var(--card-w) * 0.15 );
+  --card-corner-suit-size: calc(var(--card-w) * 0.1);
+  --card-pip-inset-x: calc(var(--card-w) * 0.14);
+  --card-pip-inset-y: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* --card-w: 143px; */
+    /* --card-h: 201px; */
+    /* --card-stack-gap: 46px; */
+    /* --card-rank-size: 48px; */
+    /* --card-corner-suit-size: 31px; */
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* --card-w: 163px; */
+    /* --card-h: 228px; */
+    /* --card-stack-gap: 51px; */
+    /* --card-rank-size: 54px; */
+    /* --card-corner-suit-size: 34px; */
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    /* --card-w: 184px; */
+    /* --card-h: 257px; */
+    /* --card-stack-gap: 56px; */
+    /* --card-rank-size: 61px; */
+    /* --card-corner-suit-size: 37px; */
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    /* --card-w: 7.6vw; */
+    /* --card-h: 286px; */
+    /* --card-stack-gap: 61px; */
+    /* --card-rank-size: 68px; */
+    /* --card-corner-suit-size: 41px; */
+  }
+}
 
 @layer base {
   body {
@@ -16,6 +70,56 @@
   }
 
   .font-saira-extra-condensed {
-    font-family: 'Saira Extra Condensed', sans-serif;
+    /* font-family: 'Saira Extra Condensed', sans-serif; */
+  }
+}
+
+@layer components {
+  .card-size {
+    width: var(--card-w);
+    height: var(--card-h);
+  }
+
+  .card-pip {
+    position: absolute;
+    inset: var(--card-pip-inset-y) var(--card-pip-inset-x);
+    /* background-color: var(--color-yellow-100); */
+  }
+
+  // absolute size-1/4 -translate-x-1/2 -translate-y-1/2
+  .card-pip-suit {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    transform: translate(-50%, -50%);
+  }
+
+  .card-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, var(--card-w));
+    gap: var(--card-gap);
+  }
+
+  .card-grid-8 {
+    display: grid;
+    grid-template-columns: repeat(8, var(--card-w));
+    gap: var(--card-gap);
+  }
+
+  .card-stack-card {
+    margin-top: calc(var(--card-stack-gap) - var(--card-h));
+  }
+
+  .card-stack-card:first-child {
+    margin-top: 0;
+  }
+
+  .card-rank-label {
+    font-size: var(--card-rank-size);
+  }
+
+  .card-corner-suit {
+    width: var(--card-corner-suit-size);
+    height: var(--card-corner-suit-size);
   }
 }

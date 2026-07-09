@@ -89,17 +89,17 @@ export const Board = observer(function Board() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="flex justify-between gap-6">
 
-        <section className="grid grid-cols-4 gap-2">
+        <section className="card-grid-4">
           <FreeCellArea />
         </section>
-        <section className="grid grid-cols-4 gap-2">
+        <section className="card-grid-4">
           <FoundationSection />
         </section>
       </div>
 
-      <section className="grid flex-1 grid-cols-8 gap-2">
+      <section className="card-grid-8 flex-1">
         {state.columns.map((_cards, col) => (
           <Column key={col} col={col} />
         ))}
