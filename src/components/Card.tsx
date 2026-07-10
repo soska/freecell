@@ -29,7 +29,7 @@ const Pip = ({ card }: { card: CardModel }) => {
   if (card.rank === 1) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
-        <SuitIcon suit={card.suit} className="h-[40%] w-[40%]" />
+        <SuitIcon suit={card.suit} className="h-[44%] w-[44%]" />
       </div>
     )
   }
@@ -59,7 +59,8 @@ const Pip = ({ card }: { card: CardModel }) => {
           suit={card.suit}
           style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
           className={cn(
-            'absolute w-[24%] -translate-x-1/2 -translate-y-1/2',
+            'absolute -translate-x-1/2 -translate-y-1/2',
+            card.rank < 10 ? 'w-[26.4%]' : 'w-[24%]',
             y > 0.5 && 'rotate-180',
           )}
         />
@@ -89,7 +90,7 @@ interface CardProps extends HTMLMotionProps<'div'> {
 const CardLabel = ({ card }: { card: CardModel }) => {
   const isRed = card.suit === 'D' || card.suit === 'H';
   return (
-    <span className={cn('card-rank-label font-saira-extra-condensed font-semibold leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
+    <span className={cn('card-rank-label font-extrabold leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
   )
 }
 
