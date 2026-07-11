@@ -13,6 +13,12 @@
   --card-corner-suit-size: calc(var(--card-w) * 0.1);
   --card-pip-inset-x: calc(var(--card-w) * 0.14);
   --card-pip-inset-y: 0.5rem;
+
+  --card-suit-red: #dc2626;
+  --card-suit-black: #363360;
+  --card-face-bg: #ffffff;
+  --card-face-border: #374151;
+  --card-face-panel-bg: #fef3c7;
 }
 
 @media (min-width: 768px) {
@@ -62,11 +68,11 @@
   }
 
   .color-redcard {
-    @apply text-red-600;
+    color: var(--card-suit-red);
   }
 
   .color-blackcard {
-    @apply text-gray-900;
+    color: var(--card-suit-black);
   }
 
   .font-saira-extra-condensed {
@@ -78,6 +84,16 @@
   .card-size {
     width: var(--card-w);
     height: var(--card-h);
+  }
+
+  .card-face {
+    background-color: var(--card-face-bg);
+    border-color: var(--card-face-border);
+  }
+
+  .card-face-panel {
+    background-color: var(--card-face-panel-bg);
+    border-color: color-mix(in srgb, currentColor 50%, transparent);
   }
 
   .card-pip {

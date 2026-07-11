@@ -39,8 +39,8 @@ const Pip = ({ card }: { card: CardModel }) => {
     return (
       <div
         className={cn(
-          'absolute inset-x-[22%] inset-y-[16%] flex items-center justify-center rounded-md border-2 bg-yellow-100',
-          isRed(card) ? 'border-red-600/50' : 'border-gray-800/50',
+          'card-face-panel absolute inset-x-[22%] inset-y-[16%] flex items-center justify-center rounded-md border-2',
+          isRed(card) ? 'color-redcard' : 'color-blackcard',
         )}
       >
         <SuitIcon suit={card.suit} className="h-[45%] w-[45%]" />
@@ -88,9 +88,9 @@ interface CardProps extends HTMLMotionProps<'div'> {
 }
 
 const CardLabel = ({ card }: { card: CardModel }) => {
-  const isRed = card.suit === 'D' || card.suit === 'H';
+  const red = isRed(card)
   return (
-    <span className={cn('card-rank-label font-extrabold leading-none', isRed ? 'text-red-600' : 'text-gray-900')}>{cardLabel(card)}</span>
+    <span className={cn('card-rank-label font-extrabold leading-none', red ? 'color-redcard' : 'color-blackcard')}>{cardLabel(card)}</span>
   )
 }
 
@@ -127,7 +127,7 @@ export function Card({ card, still = false, className, ...props }: CardProps) {
     <motion.div
       {...animation}
       className={cn(
-        'card-size relative select-none rounded-lg border-2 border-gray-700 bg-white shadow-xl shadow-black/20',
+        'card-face card-size relative select-none rounded-lg border-2 shadow-xl shadow-black/20',
         flying && 'z-10',
         className,
       )}
